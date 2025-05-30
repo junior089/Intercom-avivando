@@ -251,3 +251,68 @@
 <W>2025-05-29 22:10:10.166 1 => Starting voice thread
 <W>2025-05-29 22:10:10.167 1 => CELT codec switch ffffffff8000000b 0 (prefer ffffffff8000000b) (Opus 1)
 <W>2025-05-29 22:10:10.167 1 => <1:teste(-1)> Authenticated
+<W>2025-05-29 23:17:00.733 1 => <1:teste(-1)> Moved teste:1(-1) to Louvor[7:6]
+<W>2025-05-29 23:18:13.973 1 => <1:teste(-1)> Moved teste:1(-1) to Som e Mídia[10:6]
+<W>2025-05-29 23:18:30.697 1 => <1:teste(-1)> Connection closed: The remote host closed the connection [1]
+<W>2025-05-29 23:18:30.699 1 => Ending voice thread
+<W>2025-05-30 00:00:07.973 1 => <0:(-1)> New connection: [fe80::d624:9ae8:425e:88f]:61495
+<W>2025-05-30 00:00:07.973 Connection: Failed to add flow to QOS
+<W>2025-05-30 00:00:07.984 1 => <0:(-1)> Client version 1.5.735 (Windows Windows 10 Pro 2009 27863.1000 [x64]: 1.5.735)
+<W>2025-05-30 00:00:07.985 1 => Starting voice thread
+<W>2025-05-30 00:00:07.986 1 => <2:teste(-1)> Authenticated
+<W>2025-05-30 00:00:10.522 1 => <2:teste(-1)> Moved teste:2(-1) to Retiros[18:16]
+<W>2025-05-30 00:31:23.644 1 => <2:teste(-1)> Connection closed: The remote host closed the connection [1]
+<W>2025-05-30 00:31:23.649 1 => Ending voice thread
+<X>2025-05-30 16:37:29.167 SSL: OpenSSL version is 'OpenSSL 3.2.0 23 Nov 2023'
+<W>2025-05-30 16:37:29.176 Initializing settings from C:/DEV/Intercom avivando/murmur.ini (basepath C:/DEV/Intercom avivando)
+<W>2025-05-30 16:37:29.178 MetaParams: TLS cipher preference is "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA:AES256-SHA:AES128-SHA"
+<W>2025-05-30 16:37:29.194 SSL: CA certificate filter applied. Filtered size: 152, original size: 152
+<W>2025-05-30 16:37:29.195 ServerDB: Opened SQLite database C:/DEV/Intercom avivando/mumble-igreja.sqlite
+<W>2025-05-30 16:37:29.211 ServerDB: Configured SQLite for journal_mode=WAL, synchronous=FULL
+<W>2025-05-30 16:37:30.073 MumbleServerIce: Endpoint "tcp -h 127.0.0.1 -p 6502 -t 60000" running
+<W>2025-05-30 16:37:30.073 Murmur 1.5.735 running on Windows: Windows 10 Pro 2009 27863.1000 [x64]: Booting servers
+<W>2025-05-30 16:37:30.085 1 => Server listening on 0.0.0.0:64738
+<W>2025-05-30 16:37:30.089 1 => Registering zeroconf service...
+<W>2025-05-30 16:37:30.090 1 => Not registering server as public
+<W>2025-05-30 16:41:06.089 1 => <0:(-1)> New connection: [fe80::d624:9ae8:425e:88f]:52071
+<W>2025-05-30 16:41:06.091 Connection: Failed to add flow to QOS
+<W>2025-05-30 16:41:06.116 1 => <0:(-1)> Client version 1.5.735 (Windows Windows 10 Pro 2009 27863.1000 [x64]: 1.5.735)
+<W>2025-05-30 16:41:06.117 1 => Starting voice thread
+<W>2025-05-30 16:41:06.118 1 => CELT codec switch ffffffff8000000b 0 (prefer ffffffff8000000b) (Opus 1)
+<W>2025-05-30 16:41:06.119 1 => <1:teste(-1)> Authenticated
+<W>2025-05-30 16:41:09.221 1 => <1:teste(-1)> Moved teste:1(-1) to Som e Mídia[10:6]
+<W>2025-05-30 17:19:12.928 1 => <1:teste(-1)> Moved teste:1(-1) to Líderes de Ministério[5:2]
+<W>2025-05-30 17:19:15.038 1 => <1:teste(-1)> Moved teste:1(-1) to Som e Mídia[10:6]
+<W>2025-05-30 18:21:05.703 Killing running servers
+<W>2025-05-30 18:21:05.705 1 => Removed all Ice ServerCallbacks
+<W>2025-05-30 18:21:05.706 1 => Unregistering zeroconf service...
+<W>2025-05-30 18:21:05.706 Zeroconf: DnsServiceDeRegister() failed with error 14!
+<W>2025-05-30 18:21:05.707 1 => Ending voice thread
+<W>2025-05-30 18:21:05.709 1 => Stopped
+<W>2025-05-30 18:21:05.720 Shutting down
+<W>2025-05-30 18:21:05.724 MumbleServerIce: Shutdown complete
+<X>2025-05-30 18:21:16.518 SSL: OpenSSL version is 'OpenSSL 3.2.0 23 Nov 2023'
+<W>2025-05-30 18:21:16.519 Initializing settings from C:/DEV/Intercom avivando/murmur.ini (basepath C:/DEV/Intercom avivando)
+<W>2025-05-30 18:21:16.520 MetaParams: TLS cipher preference is "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA:AES256-SHA:AES128-SHA"
+<W>2025-05-30 18:21:16.531 SSL: CA certificate filter applied. Filtered size: 152, original size: 152
+<W>2025-05-30 18:21:16.532 ServerDB: Opened SQLite database C:/DEV/Intercom avivando/mumble-igreja.sqlite
+<W>2025-05-30 18:21:16.537 ServerDB: Configured SQLite for journal_mode=WAL, synchronous=FULL
+<W>2025-05-30 18:21:17.937 Performed initial PBKDF2 benchmark. Will use 32000 iterations as default
+<W>2025-05-30 18:21:17.937 Generating new tables...
+<W>2025-05-30 18:21:17.944 MumbleServerIce: Endpoint "tcp -h 127.0.0.1 -p 6502 -t 60000" running
+<W>2025-05-30 18:21:17.944 Murmur 1.5.735 running on Windows: Windows 10 Pro 2009 27863.1000 [x64]: Booting servers
+<W>2025-05-30 18:21:17.966 1 => Password for 'SuperUser' set to 'KiPZSFdnhts6'
+<W>2025-05-30 18:21:17.978 1 => Server listening on 0.0.0.0:64738
+<W>2025-05-30 18:21:17.979 1 => Generating new server certificate.
+<W>2025-05-30 18:21:18.004 1 => Registering zeroconf service...
+<W>2025-05-30 18:21:18.005 1 => Not registering server as public
+<W>2025-05-30 18:21:18.008 1 => <0:(-1)> New connection: [fe80::d624:9ae8:425e:88f]:55618
+<W>2025-05-30 18:21:18.008 Connection: Failed to add flow to QOS
+<W>2025-05-30 18:21:18.018 1 => <0:(-1)> Connection closed: The remote host closed the connection [1]
+<W>2025-05-30 18:21:19.113 1 => <0:(-1)> New connection: [fe80::d624:9ae8:425e:88f]:55623
+<W>2025-05-30 18:21:19.113 Connection: Failed to add flow to QOS
+<W>2025-05-30 18:21:19.139 1 => <0:(-1)> Client version 1.5.735 (Windows Windows 10 Pro 2009 27863.1000 [x64]: 1.5.735)
+<W>2025-05-30 18:21:19.140 1 => Starting voice thread
+<W>2025-05-30 18:21:19.141 1 => CELT codec switch ffffffff8000000b 0 (prefer ffffffff8000000b) (Opus 1)
+<W>2025-05-30 18:21:19.142 1 => <1:teste(-1)> Authenticated
+<W>2025-05-30 18:32:45.901 1 => <1:teste(-1)> Moved teste:1(-1) to teste[1:0]

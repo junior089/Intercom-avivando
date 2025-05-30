@@ -1,357 +1,969 @@
-{% extends "base.html" %}
-
-{% block page_title %}Configurações{% endblock %}
-{% block page_subtitle %}Configurações do servidor e sistema{% endblock %}
-
-{% block page_actions %}
-<button class="btn btn-success" onclick="saveAllSettings()">
-    <i class="fas fa-save me-2"></i>
-    Salvar Todas
-</button>
-{% endblock %}
-
-{% block content %}
-<!-- Configurações do Servidor -->
-<div class="row g-4">
-    <div class="col-lg-8">
-        <div class="card shadow-custom mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-server me-2 text-primary"></i>
-                    Configurações do Servidor Mumble
-                </h5>
-            </div>
-            <div class="card-body">
-                <form id="serverConfigForm">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="serverName" class="form-label">Nome do Servidor</label>
-                            <input type="text" class="form-control" id="serverName" value="{{ mumble_config.server_name }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="maxUsers" class="form-label">Máximo de Usuários</label>
-                            <input type="number" class="form-control" id="maxUsers" value="{{ mumble_config.max_users }}" min="1" max="1000">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="serverHost" class="form-label">Host</label>
-                            <input type="text" class="form-control" id="serverHost" value="{{ mumble_config.host }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="serverPort" class="form-label">Porta</label>
-                            <input type="number" class="form-control" id="serverPort" value="{{ mumble_config.port }}" min="1" max="65535">
-                        </div>
-                        <div class="col-12">
-                            <label for="welcomeText" class="form-label">Mensagem de Boas-vindas</label>
-                            <textarea class="form-control" id="welcomeText" rows="3">{{ mumble_config.welcome_text }}</textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="adminSecret" class="form-label">Senha de Administrador</label>
-                            <input type="password" class="form-control" id="adminSecret" value="{{ mumble_config.secret }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="bandwidth" class="form-label">Largura de Banda (KB/s)</label>
-                            <input type="number" class="form-control" id="bandwidth" value="128" min="32" max="512">
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Configurações de Segurança -->
-        <div class="card shadow-custom mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-shield-alt me-2 text-warning"></i>
-                    Configurações de Segurança
-                </h5>
-            </div>
-            <div class="card-body">
-                <form id="securityConfigForm">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="requireRegistration" checked>
-                                <label class="form-check-label" for="requireRegistration">
-                                    Exigir Registro
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="allowGuests" checked>
-                                <label class="form-check-label" for="allowGuests">
-                                    Permitir Convidados
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="enableLogging" checked>
-                                <label class="form-check-label" for="enableLogging">
-                                    Habilitar Logs
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="enableRecording">
-                                <label class="form-check-label" for="enableRecording">
-                                    Permitir Gravação
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="maxIdleTime" class="form-label">Tempo Máximo Inativo (min)</label>
-                            <input type="number" class="form-control" id="maxIdleTime" value="30" min="5" max="120">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="maxMessageLength" class="form-label">Tamanho Máximo da Mensagem</label>
-                            <input type="number" class="form-control" id="maxMessageLength" value="5000" min="100" max="10000">
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Configurações de Áudio -->
-        <div class="card shadow-custom">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-volume-up me-2 text-success"></i>
-                    Configurações de Áudio
-                </h5>
-            </div>
-            <div class="card-body">
-                <form id="audioConfigForm">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="audioQuality" class="form-label">Qualidade de Áudio</label>
-                            <select class="form-select" id="audioQuality">
-                                <option value="low">Baixa (32 kbps)</option>
-                                <option value="medium" selected>Média (64 kbps)</option>
-                                <option value="high">Alta (128 kbps)</option>
-                                <option value="ultra">Ultra (256 kbps)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="audioCodec" class="form-label">Codec de Áudio</label>
-                            <select class="form-select" id="audioCodec">
-                                <option value="speex">Speex</option>
-                                <option value="celt" selected>CELT</option>
-                                <option value="opus">Opus</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="enableEcho" checked>
-                                <label class="form-check-label" for="enableEcho">
-                                    Cancelamento de Eco
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="enableNoiseSuppression" checked>
-                                <label class="form-check-label" for="enableNoiseSuppression">
-                                    Supressão de Ruído
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Painel de Status -->
-    <div class="col-lg-4">
-        <div class="card shadow-custom mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-info-circle me-2 text-info"></i>
-                    Status do Sistema
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Status da Conexão</label>
-                    <div>
-                        <span class="badge bg-{{ 'success' if server_status.connection_status and 'Conectado' in server_status.connection_status else 'danger' }} fs-6">
-                            <i class="fas fa-circle me-1"></i>
-                            {{ server_status.connection_status or 'Desconectado' }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Modo de Operação</label>
-                    <div>
-                        <span class="badge bg-{{ 'warning' if server_status.mode == 'Simulação' else 'primary' }} fs-6">
-                            {{ server_status.mode or 'Desconhecido' }}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Versão do Servidor</label>
-                    <div>{{ server_status.version or '1.4.0' }}</div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Usuários Conectados</label>
-                    <div class="progress" style="height: 20px;">
-                        <div class="progress-bar" style="width: {{ (server_status.users / server_status.max_users * 100) if server_status.max_users else 0 }}%">
-                            {{ server_status.users or 0 }} / {{ server_status.max_users or 100 }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Uso de Banda</label>
-                    <div>{{ (server_status.bandwidth / 1000) | round(1) if server_status.bandwidth else 0 }} KB/s</div>
-                </div>
-
-                <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary" onclick="restartServer()">
-                        <i class="fas fa-redo me-2"></i>
-                        Reiniciar Servidor
-                    </button>
-                    <button class="btn btn-outline-warning" onclick="backupConfig()">
-                        <i class="fas fa-download me-2"></i>
-                        Backup Config
-                    </button>
-                    <button class="btn btn-outline-info" onclick="viewLogs()">
-                        <i class="fas fa-file-alt me-2"></i>
-                        Ver Logs
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Configurações do Painel -->
-        <div class="card shadow-custom">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-cog me-2 text-secondary"></i>
-                    Configurações do Painel
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label for="panelTheme" class="form-label">Tema</label>
-                    <select class="form-select" id="panelTheme">
-                        <option value="auto">Automático</option>
-                        <option value="light">Claro</option>
-                        <option value="dark">Escuro</option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="refreshInterval" class="form-label">Intervalo de Atualização (seg)</label>
-                    <input type="number" class="form-control" id="refreshInterval" value="30" min="10" max="300">
-                </div>
-
-                <div class="mb-3">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="enableNotifications" checked>
-                        <label class="form-check-label" for="enableNotifications">
-                            Notificações
-                        </label>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="enableSounds">
-                        <label class="form-check-label" for="enableSounds">
-                            Sons de Alerta
-                        </label>
-                    </div>
-                </div>
-
-                <div class="d-grid">
-                    <button class="btn btn-outline-secondary" onclick="resetPanelSettings()">
-                        <i class="fas fa-undo me-2"></i>
-                        Restaurar Padrões
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function saveAllSettings() {
-    const serverConfig = {
-        server_name: document.getElementById('serverName').value,
-        max_users: parseInt(document.getElementById('maxUsers').value),
-        host: document.getElementById('serverHost').value,
-        port: parseInt(document.getElementById('serverPort').value),
-        welcome_text: document.getElementById('welcomeText').value,
-        secret: document.getElementById('adminSecret').value
-    };
-
-    fetch('/api/update_server_config', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(serverConfig)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('Configurações salvas com sucesso!');
-        } else {
-            showToast('Erro ao salvar configurações: ' + data.error, 'danger');
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações - Mumble</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --dark-color: #34495e;
+            --light-color: #ecf0f1;
         }
-    })
-    .catch(error => {
-        showToast('Erro ao salvar configurações', 'danger');
-    });
-}
 
-function restartServer() {
-    if (confirm('Tem certeza que deseja reiniciar o servidor? Todos os usuários serão desconectados.')) {
-        showToast('Funcionalidade de reinicialização em desenvolvimento', 'info');
-    }
-}
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-function backupConfig() {
-    showToast('Funcionalidade de backup em desenvolvimento', 'info');
-}
+        .settings-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 1200px;
+            overflow: hidden;
+        }
 
-function viewLogs() {
-    window.location.href = '/logs';
-}
+        .settings-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
 
-function resetPanelSettings() {
-    if (confirm('Tem certeza que deseja restaurar as configurações padrão do painel?')) {
-        document.getElementById('panelTheme').value = 'auto';
-        document.getElementById('refreshInterval').value = '30';
-        document.getElementById('enableNotifications').checked = true;
-        document.getElementById('enableSounds').checked = false;
+        .settings-nav {
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            min-height: 600px;
+        }
 
-        showToast('Configurações do painel restauradas');
-    }
-}
+        .nav-pills .nav-link {
+            color: var(--dark-color);
+            border-radius: 10px;
+            margin: 5px 0;
+            transition: all 0.3s ease;
+        }
 
-// Aplicar tema selecionado
-document.getElementById('panelTheme').addEventListener('change', function() {
-    const theme = this.value;
-    if (theme === 'auto') {
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-    } else {
-        document.documentElement.setAttribute('data-theme', theme);
-    }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+        }
 
-    // Salvar preferência
-    fetch('/api/toggle_dark_mode', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({dark_mode: theme === 'dark'})
-    });
-});
-</script>
-{% endblock %}
+        .nav-pills .nav-link:hover:not(.active) {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--secondary-color);
+        }
+
+        .settings-content {
+            padding: 30px;
+            min-height: 600px;
+        }
+
+        .setting-group {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e9ecef;
+        }
+
+        .setting-group h5 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .form-check-input:checked {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .range-slider:hover {
+            opacity: 1;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            cursor: pointer;
+        }
+
+        .range-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            cursor: pointer;
+        }
+
+        .audio-meter {
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .audio-level {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-color), var(--warning-color), var(--danger-color));
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--success-color), #2ecc71);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, var(--warning-color), #e67e22);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 30px;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.4);
+        }
+
+        .setting-description {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .advanced-toggle {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid var(--secondary-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            color: white;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .test-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-good { background-color: var(--success-color); }
+        .status-warning { background-color: var(--warning-color); }
+        .status-error { background-color: var(--danger-color); }
+
+        @media (max-width: 768px) {
+            .settings-container {
+                margin: 10px;
+            }
+
+            .settings-nav {
+                min-height: auto;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="settings-container">
+            <div class="settings-header">
+                <h2><i class="fas fa-cog me-3"></i>Configurações do Mumble</h2>
+                <p class="mb-0">Configure sua experiência de áudio e comunicação</p>
+            </div>
+
+            <div class="row g-0">
+                <div class="col-lg-3 settings-nav">
+                    <div class="nav flex-column nav-pills p-3" id="v-pills-tab" role="tablist">
+                        <button class="nav-link active" id="audio-tab" data-bs-toggle="pill" data-bs-target="#audio" type="button">
+                            <i class="fas fa-microphone me-2"></i>Áudio
+                        </button>
+                        <button class="nav-link" id="network-tab" data-bs-toggle="pill" data-bs-target="#network" type="button">
+                            <i class="fas fa-network-wired me-2"></i>Rede
+                        </button>
+                        <button class="nav-link" id="interface-tab" data-bs-toggle="pill" data-bs-target="#interface" type="button">
+                            <i class="fas fa-desktop me-2"></i>Interface
+                        </button>
+                        <button class="nav-link" id="notifications-tab" data-bs-toggle="pill" data-bs-target="#notifications" type="button">
+                            <i class="fas fa-bell me-2"></i>Notificações
+                        </button>
+                        <button class="nav-link" id="security-tab" data-bs-toggle="pill" data-bs-target="#security" type="button">
+                            <i class="fas fa-shield-alt me-2"></i>Segurança
+                        </button>
+                        <button class="nav-link" id="advanced-tab" data-bs-toggle="pill" data-bs-target="#advanced" type="button">
+                            <i class="fas fa-cogs me-2"></i>Avançado
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-9 settings-content">
+                    <div class="tab-content" id="v-pills-tabContent">
+                        <!-- Configurações de Áudio -->
+                        <div class="tab-pane fade show active" id="audio" role="tabpanel">
+                            <div class="setting-group">
+                                <h5><i class="fas fa-microphone"></i>Dispositivos de Áudio</h5>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Dispositivo de Entrada (Microfone)</label>
+                                        <select class="form-select" id="inputDevice">
+                                            <option value="default">Padrão do Sistema</option>
+                                            <option value="mic1">Microfone Interno</option>
+                                            <option value="mic2">Headset USB</option>
+                                            <option value="mic3">Microfone Bluetooth</option>
+                                        </select>
+                                        <button class="btn test-button mt-2" onclick="testMicrophone()">
+                                            <i class="fas fa-play me-1"></i>Testar Microfone
+                                        </button>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Dispositivo de Saída (Alto-falantes)</label>
+                                        <select class="form-select" id="outputDevice">
+                                            <option value="default">Padrão do Sistema</option>
+                                            <option value="speakers1">Alto-falantes Internos</option>
+                                            <option value="speakers2">Headset USB</option>
+                                            <option value="speakers3">Fones Bluetooth</option>
+                                        </select>
+                                        <button class="btn test-button mt-2" onclick="testSpeakers()">
+                                            <i class="fas fa-volume-up me-1"></i>Testar Alto-falantes
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Nível do Microfone</label>
+                                    <input type="range" class="range-slider" id="micLevel" min="0" max="100" value="75">
+                                    <div class="audio-meter mt-2">
+                                        <div class="audio-level" id="micMeter"></div>
+                                    </div>
+                                    <div class="setting-description">Ajuste o nível de entrada do microfone</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Volume de Saída</label>
+                                    <input type="range" class="range-slider" id="outputLevel" min="0" max="100" value="80">
+                                    <div class="setting-description">Controla o volume geral de saída</div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h5><i class="fas fa-filter"></i>Qualidade e Processamento de Áudio</h5>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Qualidade de Áudio</label>
+                                        <select class="form-select" id="audioQuality">
+                                            <option value="low">Baixa (32 kbps)</option>
+                                            <option value="medium" selected>Média (64 kbps)</option>
+                                            <option value="high">Alta (128 kbps)</option>
+                                            <option value="ultra">Ultra (256 kbps)</option>
+                                        </select>
+                                        <div class="setting-description">Maior qualidade consome mais banda</div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Taxa de Amostragem</label>
+                                        <select class="form-select" id="sampleRate">
+                                            <option value="22050">22.05 kHz</option>
+                                            <option value="44100" selected>44.1 kHz</option>
+                                            <option value="48000">48 kHz</option>
+                                            <option value="96000">96 kHz</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="noiseSupression" checked>
+                                    <label class="form-check-label" for="noiseSupression">
+                                        <strong>Supressão de Ruído</strong>
+                                    </label>
+                                    <div class="setting-description">Remove ruídos de fundo automaticamente</div>
+                                </div>
+
+                                <div class="mb-3" id="noiseSettings">
+                                    <label class="form-label">Intensidade da Supressão de Ruído</label>
+                                    <input type="range" class="range-slider" id="noiseLevel" min="0" max="100" value="60">
+                                    <div class="d-flex justify-content-between">
+                                        <small>Suave</small>
+                                        <small>Agressiva</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="echoCancellation" checked>
+                                    <label class="form-check-label" for="echoCancellation">
+                                        <strong>Cancelamento de Eco</strong>
+                                    </label>
+                                    <div class="setting-description">Previne feedback de áudio</div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="autoGain" checked>
+                                    <label class="form-check-label" for="autoGain">
+                                        <strong>Controle Automático de Ganho</strong>
+                                    </label>
+                                    <div class="setting-description">Ajusta automaticamente o volume do microfone</div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="voiceActivity">
+                                    <label class="form-check-label" for="voiceActivity">
+                                        <strong>Detecção de Atividade de Voz (VAD)</strong>
+                                    </label>
+                                    <div class="setting-description">Transmite apenas quando detecta fala</div>
+                                </div>
+
+                                <div class="mb-3" id="vadSettings" style="display: none;">
+                                    <label class="form-label">Sensibilidade VAD</label>
+                                    <input type="range" class="range-slider" id="vadSensitivity" min="0" max="100" value="50">
+                                    <div class="d-flex justify-content-between">
+                                        <small>Menos Sensível</small>
+                                        <small>Mais Sensível</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h5><i class="fas fa-keyboard"></i>Controles de Transmissão</h5>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Modo de Transmissão</label>
+                                    <select class="form-select" id="transmissionMode">
+                                        <option value="continuous">Transmissão Contínua</option>
+                                        <option value="ptt" selected>Push-to-Talk (PTT)</option>
+                                        <option value="vad">Ativação por Voz</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3" id="pttSettings">
+                                    <label class="form-label">Tecla Push-to-Talk</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="pttKey" value="Ctrl + Space" readonly>
+                                        <button class="btn btn-outline-secondary" onclick="recordPTTKey()">
+                                            <i class="fas fa-keyboard"></i> Alterar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="pttToggle">
+                                    <label class="form-check-label" for="pttToggle">
+                                        Modo Toggle (pressionar uma vez para ativar/desativar)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configurações de Rede -->
+                        <div class="tab-pane fade" id="network" role="tabpanel">
+                            <div class="setting-group">
+                                <h5><i class="fas fa-server"></i>Conexão do Servidor</h5>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Servidor Padrão</label>
+                                    <input type="text" class="form-control" id="defaultServer" value="mumble.exemplo.com">
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Porta</label>
+                                        <input type="number" class="form-control" id="serverPort" value="64738">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Timeout de Conexão (segundos)</label>
+                                        <input type="number" class="form-control" id="connectionTimeout" value="30">
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="autoReconnect" checked>
+                                    <label class="form-check-label" for="autoReconnect">
+                                        Reconectar automaticamente
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Status da Conexão</label>
+                                    <div class="d-flex align-items-center">
+                                        <span class="status-indicator status-good"></span>
+                                        <span>Conectado - Latência: 45ms</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h5><i class="fas fa-tachometer-alt"></i>Otimização de Rede</h5>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Limite de Banda (kbps)</label>
+                                    <input type="range" class="range-slider" id="bandwidthLimit" min="32" max="512" value="128">
+                                    <div class="d-flex justify-content-between">
+                                        <small>32 kbps</small>
+                                        <small>512 kbps</small>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="tcpMode">
+                                    <label class="form-check-label" for="tcpMode">
+                                        Forçar modo TCP (para redes restritivas)
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="qosEnabled" checked>
+                                    <label class="form-check-label" for="qosEnabled">
+                                        Habilitar QoS (Quality of Service)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configurações de Interface -->
+                        <div class="tab-pane fade" id="interface" role="tabpanel">
+                            <div class="setting-group">
+                                <h5><i class="fas fa-palette"></i>Aparência</h5>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Tema</label>
+                                    <select class="form-select" id="theme">
+                                        <option value="light">Claro</option>
+                                        <option value="dark" selected>Escuro</option>
+                                        <option value="auto">Automático</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Idioma</label>
+                                    <select class="form-select" id="language">
+                                        <option value="pt-BR" selected>Português (Brasil)</option>
+                                        <option value="en-US">English (US)</option>
+                                        <option value="es-ES">Español</option>
+                                        <option value="fr-FR">Français</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="minimizeToTray" checked>
+                                    <label class="form-check-label" for="minimizeToTray">
+                                        Minimizar para a bandeja do sistema
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="startMinimized">
+                                    <label class="form-check-label" for="startMinimized">
+                                        Iniciar minimizado
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h5><i class="fas fa-users"></i>Lista de Usuários</h5>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="showUserIcons" checked>
+                                    <label class="form-check-label" for="showUserIcons">
+                                        Mostrar ícones de status dos usuários
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="showUserActivity" checked>
+                                    <label class="form-check-label" for="showUserActivity">
+                                        Mostrar indicador de atividade de voz
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="sortUsersByActivity">
+                                    <label class="form-check-label" for="sortUsersByActivity">
+                                        Ordenar usuários por atividade
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configurações de Notificações -->
+                        <div class="tab-pane fade" id="notifications" role="tabpanel">
+                            <div class="setting-group">
+                                <h5><i class="fas fa-bell"></i>Notificações de Sistema</h5>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="desktopNotifications" checked>
+                                    <label class="form-check-label" for="desktopNotifications">
+                                        Notificações na área de trabalho
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="soundNotifications" checked>
+                                    <label class="form-check-label" for="soundNotifications">
+                                        Notificações sonoras
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="userJoinLeave" checked>
+                                    <label class="form-check-label" for="userJoinLeave">
+                                        Notificar entrada/saída de usuários
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="channelMessages">
+                                    <label class="form-check-label" for="channelMessages">
+                                        Notificar mensagens do canal
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="privateMessages" checked>
+                                    <label class="form-check-label" for="privateMessages">
+                                        Notificar mensagens privadas
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h5><i class="fas fa-volume-up"></i>Sons do Sistema</h5>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Volume das Notificações</label>
+                                    <input type="range" class="range-slider" id="notificationVolume" min="0" max="100" value="50">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Som de Entrada de Usuário</label>
+                                    <select class="form-select" id="userJoinSound">
+                                        <option value="default">Padrão</option>
+                                        <option value="chime">Sino</option>
+                                        <option value="beep">Bip</option>
+                                        <option value="none">Nenhum</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Som de Saída de Usuário</label>
+                                    <select class="form-select" id="userLeaveSound">
+                                        <option value="default">Padrão</option>
+                                        <option value="chime">Sino</option>
+                                        <option value="beep">Bip</option>
+                                        <option value="none">Nenhum</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configurações de Segurança -->
+                        <div class="tab-pane fade" id="security" role="tabpanel">
+                            <div class="setting-group">
+                                <h5><i class="fas fa-lock"></i>Certificados e Criptografia</h5>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="requireCertificate">
+                                    <label class="form-check-label" for="requireCertificate">
+                                        Exigir certificado do servidor
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="strongEncryption" checked>
+                                    <label class="form-check-label" for="strongEncryption">
+                                        Usar criptografia forte (AES-256)
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Certificado do Cliente</label>
+                                    <div class="input-group">
+                                        <input type="file" class="form-control" id="clientCertificate" accept=".p12,.pfx">
+                                        <button class="btn btn-outline-secondary" onclick="generateCertificate()">
+                                            <i class="fas fa-plus"></i> Gerar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h5><i class="fas fa-user-shield"></i>Privacidade</h5>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="hideIP" checked>
+                                    <label class="form-check-label" for="hideIP">
+                                        Ocultar endereço IP de outros usuários
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="blockPrivateMessages">
+                                    <label class="form-check-label" for="blockPrivateMessages">
+                                        Bloquear mensagens privadas de desconhecidos
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="recordingWarning" checked>
+                                    <label class="form-check-label" for="recordingWarning">
+                                        Avisar quando gravação estiver ativa
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configurações Avançadas -->
+                        <div class="tab-pane fade" id="advanced" role="tabpanel">
+                            <div class="setting-group">
+                                <h5><i class="fas fa-code"></i>Configurações Técnicas</h5>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Codec de Áudio</label>
+                                    <select class="form-select" id="audioCodec">
+                                        <option value="opus" selected>Opus (Recomendado)</option>
+                                        <option value="celt">CELT</option>
+                                        <option value="speex">Speex</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Tamanho do Buffer de Áudio (ms)</label>
+                                    <input type="number" class="form-control" id="audioBuffer" value="20" min="10" max="100">
+                                    <div class="setting-description">Menor = menos latência, maior = mais estável</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Frames por Pacote</label>
+                                    <select class="form-select" id="framesPerPacket">
+                                        <option value="1">1 (Baixa latência)</option>
+                                        <option value="2" selected>2 (Balanceado)</option>
+                                        <option value="4">4 (Economia de banda)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="debugMode">
+                                    <label class="form-check-label" for="debugMode">
+                                        Modo de depuração (logs detalhados)
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="experimentalFeatures">
+                                    <label class="form-check-label" for="experimentalFeatures">
+                                        Habilitar recursos experimentais
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="setting-group">
+                                <h5><i class="fas fa-database"></i>Dados e Cache</h5>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Localização do Cache</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="cacheLocation" value="C:\Users\Usuario\AppData\Local\Mumble\cache" readonly>
+                                        <button class="btn btn-outline-secondary" onclick="selectCacheLocation()">
+                                            <i class="fas fa-folder"></i> Alterar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Tamanho Máximo do Cache (MB)</label>
+                                    <input type="number" class="form-control" id="maxCacheSize" value="100" min="10" max="1000">
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-warning" onclick="clearCache()">
+                                        <i class="fas fa-trash"></i> Limpar Cache
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="exportSettings()">
+                                        <i class="fas fa-download"></i> Exportar Configurações
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="importSettings()">
+                                        <i class="fas fa-upload"></i> Importar Configurações
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            <button class="btn btn-reset me-2" onclick="resetToDefaults()">
+                                <i class="fas fa-undo me-2"></i>Restaurar Padrões
+                            </button>
+                        </div>
+                        <div>
+                            <button class="btn btn-secondary me-2" onclick="window.history.back()">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </button>
+                            <button class="btn btn-save" onclick="saveSettings()">
+                                <i class="fas fa-save me-2"></i>Salvar Configurações
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Simulação de medidor de áudio
+        function updateAudioMeter() {
+            const meter = document.getElementById('micMeter');
+            const level = Math.random() * 100;
+            meter.style.width = level + '%';
+        }
+
+        // Atualizar medidor a cada 100ms
+        setInterval(updateAudioMeter, 100);
+
+        // Controle de supressão de ruído
+        document.getElementById('noiseSupression').addEventListener('change', function() {
+            const noiseSettings = document.getElementById('noiseSettings');
+            noiseSettings.style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Controle de VAD
+        document.getElementById('voiceActivity').addEventListener('change', function() {
+            const vadSettings = document.getElementById('vadSettings');
+            vadSettings.style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Controle de modo de transmissão
+        document.getElementById('transmissionMode').addEventListener('change', function() {
+            const pttSettings = document.getElementById('pttSettings');
+            pttSettings.style.display = this.value === 'ptt' ? 'block' : 'none';
+        });
+
+        // Funções de teste
+        function testMicrophone() {
+            alert('Teste de microfone iniciado. Fale algo e verifique o medidor de nível.');
+        }
+
+        function testSpeakers() {
+            alert('Teste de alto-falantes iniciado. Você deve ouvir um som de teste.');
+        }
+
+        function recordPTTKey() {
+            const input = document.getElementById('pttKey');
+            input.value = 'Pressione a tecla desejada...';
+            // Aqui você implementaria a captura da tecla
+            setTimeout(() => {
+                input.value = 'Ctrl + T'; // Exemplo
+            }, 2000);
+        }
+
+        function generateCertificate() {
+            alert('Gerando certificado do cliente...');
+        }
+
+        function selectCacheLocation() {
+            alert('Seletor de pasta seria aberto aqui.');
+        }
+
+        function clearCache() {
+            if (confirm('Tem certeza que deseja limpar o cache? Esta ação não pode ser desfeita.')) {
+                alert('Cache limpo com sucesso!');
+            }
+        }
+
+        function exportSettings() {
+            alert('Configurações exportadas para arquivo.');
+        }
+
+        function importSettings() {
+            alert('Seletor de arquivo seria aberto aqui.');
+        }
+
+        function resetToDefaults() {
+            if (confirm('Tem certeza que deseja restaurar todas as configurações para os valores padrão?')) {
+                location.reload();
+            }
+        }
+
+        function saveSettings() {
+            // Coletar todas as configurações
+            const settings = {
+                audio: {
+                    inputDevice: document.getElementById('inputDevice').value,
+                    outputDevice: document.getElementById('outputDevice').value,
+                    micLevel: document.getElementById('micLevel').value,
+                    outputLevel: document.getElementById('outputLevel').value,
+                    audioQuality: document.getElementById('audioQuality').value,
+                    sampleRate: document.getElementById('sampleRate').value,
+                    noiseSupression: document.getElementById('noiseSupression').checked,
+                    noiseLevel: document.getElementById('noiseLevel').value,
+                    echoCancellation: document.getElementById('echoCancellation').checked,
+                    autoGain: document.getElementById('autoGain').checked,
+                    voiceActivity: document.getElementById('voiceActivity').checked,
+                    vadSensitivity: document.getElementById('vadSensitivity').value,
+                    transmissionMode: document.getElementById('transmissionMode').value,
+                    pttKey: document.getElementById('pttKey').value,
+                    pttToggle: document.getElementById('pttToggle').checked
+                },
+                network: {
+                    defaultServer: document.getElementById('defaultServer').value,
+                    serverPort: document.getElementById('serverPort').value,
+                    connectionTimeout: document.getElementById('connectionTimeout').value,
+                    autoReconnect: document.getElementById('autoReconnect').checked,
+                    bandwidthLimit: document.getElementById('bandwidthLimit').value,
+                    tcpMode: document.getElementById('tcpMode').checked,
+                    qosEnabled: document.getElementById('qosEnabled').checked
+                },
+                interface: {
+                    theme: document.getElementById('theme').value,
+                    language: document.getElementById('language').value,
+                    minimizeToTray: document.getElementById('minimizeToTray').checked,
+                    startMinimized: document.getElementById('startMinimized').checked,
+                    showUserIcons: document.getElementById('showUserIcons').checked,
+                    showUserActivity: document.getElementById('showUserActivity').checked,
+                    sortUsersByActivity: document.getElementById('sortUsersByActivity').checked
+                },
+                notifications: {
+                    desktopNotifications: document.getElementById('desktopNotifications').checked,
+                    soundNotifications: document.getElementById('soundNotifications').checked,
+                    userJoinLeave: document.getElementById('userJoinLeave').checked,
+                    channelMessages: document.getElementById('channelMessages').checked,
+                    privateMessages: document.getElementById('privateMessages').checked,
+                    notificationVolume: document.getElementById('notificationVolume').value,
+                    userJoinSound: document.getElementById('userJoinSound').value,
+                    userLeaveSound: document.getElementById('userLeaveSound').value
+                },
+                security: {
+                    requireCertificate: document.getElementById('requireCertificate').checked,
+                    strongEncryption: document.getElementById('strongEncryption').checked,
+                    hideIP: document.getElementById('hideIP').checked,
+                    blockPrivateMessages: document.getElementById('blockPrivateMessages').checked,
+                    recordingWarning: document.getElementById('recordingWarning').checked
+                },
+                advanced: {
+                    audioCodec: document.getElementById('audioCodec').value,
+                    audioBuffer: document.getElementById('audioBuffer').value,
+                    framesPerPacket: document.getElementById('framesPerPacket').value,
+                    debugMode: document.getElementById('debugMode').checked,
+                    experimentalFeatures: document.getElementById('experimentalFeatures').checked,
+                    cacheLocation: document.getElementById('cacheLocation').value,
+                    maxCacheSize: document.getElementById('maxCacheSize').value
+                }
+            };
+
+            // Enviar para o servidor
+            fetch('/save_settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(settings)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Configurações salvas com sucesso!');
+                } else {
+                    alert('Erro ao salvar configurações: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao salvar configurações.');
+            });
+        }
+
+        // Atualizar valores dos sliders em tempo real
+        document.querySelectorAll('.range-slider').forEach(slider => {
+            slider.addEventListener('input', function() {
+                // Aqui você pode adicionar feedback visual em tempo real
+                console.log(this.id + ': ' + this.value);
+            });
+        });
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar estados iniciais
+            document.getElementById('noiseSettings').style.display =
+                document.getElementById('noiseSupression').checked ? 'block' : 'none';
+
+            document.getElementById('vadSettings').style.display =
+                document.getElementById('voiceActivity').checked ? 'block' : 'none';
+
+            document.getElementById('pttSettings').style.display =
+                document.getElementById('transmissionMode').value === 'ptt' ? 'block' : 'none';
+        });
+    </script>
+</body>
+</html>

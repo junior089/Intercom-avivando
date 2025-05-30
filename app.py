@@ -45,7 +45,7 @@ AUTH_CONFIG = {
     'session_timeout': 8 * 3600  # 8 horas
 }
 
-# Configurar logging sem emojis para evitar problemas de codificação
+# Configurar logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -120,13 +120,124 @@ def init_database():
         )
     ''')
 
+    # Tabela de cargos e permissões - CORRIGIDA
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_hash TEXT UNIQUE,
+            user_name TEXT,
+            role TEXT,
+            assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            assigned_by TEXT
+        )
+    ''')
+
+    # Tabela para persistir dados de usuários
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS persistent_users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_hash TEXT UNIQUE,
+            user_name TEXT,
+            role TEXT,
+            last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+            total_time INTEGER DEFAULT 0,
+            notes TEXT
+        )
+    ''')
+
     conn.commit()
     conn.close()
 
 
+# Classe para gerenciar persistência de dados
+class UserDataManager:
+    def __init__(self):
+        self.db_path = 'mumble_panel.db'
+
+    def save_user_role(self, user_hash, user_name, role, assigned_by='Admin'):
+        """Salva o cargo do usuário no banco de dados"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # Atualizar ou inserir na tabela user_roles
+            cursor.execute('''
+                INSERT OR REPLACE INTO user_roles (user_hash, user_name, role, assigned_by)
+                VALUES (?, ?, ?, ?)
+            ''', (user_hash, user_name, role, assigned_by))
+
+            # Atualizar ou inserir na tabela persistent_users
+            cursor.execute('''
+                INSERT OR REPLACE INTO persistent_users (user_hash, user_name, role, last_seen)
+                VALUES (?, ?, ?, datetime('now'))
+            ''', (user_hash, user_name, role))
+
+            conn.commit()
+            conn.close()
+            logger.info(f"Cargo salvo: {user_name} -> {role}")
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao salvar cargo: {e}")
+            return False
+
+    def get_user_role(self, user_hash):
+        """Obtém o cargo do usuário do banco de dados"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute('SELECT role FROM user_roles WHERE user_hash = ?', (user_hash,))
+            result = cursor.fetchone()
+
+            conn.close()
+            return result[0] if result else 'membro'
+        except Exception as e:
+            logger.error(f"Erro ao obter cargo: {e}")
+            return 'membro'
+
+    def get_all_user_roles(self):
+        """Obtém todos os cargos salvos"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute('SELECT user_hash, user_name, role FROM user_roles')
+            results = cursor.fetchall()
+
+            conn.close()
+            return {row[0]: {'name': row[1], 'role': row[2]} for row in results}
+        except Exception as e:
+            logger.error(f"Erro ao obter todos os cargos: {e}")
+            return {}
+
+    def update_user_activity(self, user_hash, user_name, online_time=0):
+        """Atualiza atividade do usuário"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                INSERT OR REPLACE INTO persistent_users 
+                (user_hash, user_name, role, last_seen, total_time)
+                VALUES (?, ?, 
+                    COALESCE((SELECT role FROM persistent_users WHERE user_hash = ?), 'membro'),
+                    datetime('now'), 
+                    COALESCE((SELECT total_time FROM persistent_users WHERE user_hash = ?), 0) + ?)
+            ''', (user_hash, user_name, user_hash, user_hash, online_time))
+
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao atualizar atividade: {e}")
+            return False
+
+
 # Simulador avançado para quando Ice não está disponível
 class AdvancedMumbleSimulator:
-    def __init__(self):
+    def __init__(self, data_manager):
+        self.data_manager = data_manager
+
         self.channels = {
             0: {
                 'name': 'Root', 'parent': -1, 'description': 'Canal raiz do servidor',
@@ -145,7 +256,7 @@ class AdvancedMumbleSimulator:
             },
             3: {
                 'name': 'Ministério de Louvor', 'parent': 0, 'description': 'Canal do ministério de louvor',
-                'users': [], 'temporary': False, 'position': 3, 'max_users': 20,
+                'users': [4], 'temporary': False, 'position': 3, 'max_users': 20,
                 'password': '', 'acl': [], 'links': []
             },
             4: {
@@ -160,11 +271,12 @@ class AdvancedMumbleSimulator:
             },
             6: {
                 'name': 'Equipe Técnica', 'parent': 0, 'description': 'Canal da equipe de som e mídia',
-                'users': [], 'temporary': False, 'position': 6, 'max_users': 8,
+                'users': [5], 'temporary': False, 'position': 6, 'max_users': 8,
                 'password': '', 'acl': [], 'links': []
             }
         }
 
+        # Usuários base - os cargos serão carregados do banco
         self.users = {
             1: {
                 'name': 'Pastor João Silva', 'channel': 1, 'mute': False, 'deaf': False,
@@ -172,7 +284,8 @@ class AdvancedMumbleSimulator:
                 'priority_speaker': True, 'recording': False, 'online_time': 3600,
                 'idle_time': 0, 'bytes_per_sec': 1024, 'version': '1.4.0',
                 'os': 'Windows', 'address': '192.168.1.100', 'hash': 'hash1',
-                'identity': 'Pastor', 'context': '', 'comment': 'Pastor Principal'
+                'identity': 'Pastor', 'context': '', 'comment': 'Pastor Principal',
+                'role': 'pastor'
             },
             2: {
                 'name': 'Maria Santos', 'channel': 1, 'mute': False, 'deaf': False,
@@ -180,7 +293,8 @@ class AdvancedMumbleSimulator:
                 'priority_speaker': False, 'recording': False, 'online_time': 1800,
                 'idle_time': 300, 'bytes_per_sec': 512, 'version': '1.4.0',
                 'os': 'Android', 'address': '192.168.1.101', 'hash': 'hash2',
-                'identity': 'Membro', 'context': '', 'comment': 'Secretária'
+                'identity': 'Membro', 'context': '', 'comment': 'Secretária',
+                'role': 'membro'
             },
             3: {
                 'name': 'Pedro Oliveira', 'channel': 2, 'mute': False, 'deaf': False,
@@ -188,9 +302,31 @@ class AdvancedMumbleSimulator:
                 'priority_speaker': True, 'recording': False, 'online_time': 2400,
                 'idle_time': 0, 'bytes_per_sec': 768, 'version': '1.4.0',
                 'os': 'Linux', 'address': '192.168.1.102', 'hash': 'hash3',
-                'identity': 'Líder', 'context': '', 'comment': 'Diácono'
+                'identity': 'Líder', 'context': '', 'comment': 'Diácono',
+                'role': 'lider'
+            },
+            4: {
+                'name': 'Ana Costa', 'channel': 3, 'mute': False, 'deaf': False,
+                'self_mute': False, 'self_deaf': False, 'suppress': False,
+                'priority_speaker': False, 'recording': False, 'online_time': 1200,
+                'idle_time': 0, 'bytes_per_sec': 640, 'version': '1.4.0',
+                'os': 'iOS', 'address': '192.168.1.103', 'hash': 'hash4',
+                'identity': 'Músico', 'context': '', 'comment': 'Vocal',
+                'role': 'musico'
+            },
+            5: {
+                'name': 'Carlos Silva', 'channel': 6, 'mute': False, 'deaf': False,
+                'self_mute': False, 'self_deaf': False, 'suppress': False,
+                'priority_speaker': False, 'recording': False, 'online_time': 900,
+                'idle_time': 0, 'bytes_per_sec': 512, 'version': '1.4.0',
+                'os': 'Windows', 'address': '192.168.1.104', 'hash': 'hash5',
+                'identity': 'Técnico', 'context': '', 'comment': 'Som e Mídia',
+                'role': 'tecnico'
             }
         }
+
+        # Carregar cargos salvos do banco de dados
+        self.load_saved_roles()
 
         self.server_info = {
             'name': MUMBLE_CONFIG['server_name'],
@@ -208,14 +344,71 @@ class AdvancedMumbleSimulator:
         }
 
         self.next_channel_id = 7
-        self.next_user_id = 4
+        self.next_user_id = 6
         self.banned_users = []
         self.server_logs = []
         self.acl_groups = {
             'admin': ['hash1'],
             'moderator': ['hash1', 'hash3'],
-            'member': ['hash1', 'hash2', 'hash3']
+            'member': ['hash1', 'hash2', 'hash3', 'hash4', 'hash5']
         }
+
+    def load_saved_roles(self):
+        """Carrega cargos salvos do banco de dados"""
+        try:
+            saved_roles = self.data_manager.get_all_user_roles()
+
+            for user_id, user in self.users.items():
+                user_hash = user['hash']
+                if user_hash in saved_roles:
+                    saved_role = saved_roles[user_hash]['role']
+                    user['role'] = saved_role
+                    logger.info(f"Cargo carregado para {user['name']}: {saved_role}")
+
+                    # Atualizar prioridade baseada no cargo
+                    if saved_role in ['pastor', 'lider', 'diacono']:
+                        user['priority_speaker'] = True
+                    else:
+                        user['priority_speaker'] = False
+
+        except Exception as e:
+            logger.error(f"Erro ao carregar cargos salvos: {e}")
+
+    def update_user_role(self, user_id, new_role, assigned_by='Admin'):
+        """Atualiza o cargo do usuário e salva no banco"""
+        if user_id in self.users:
+            user = self.users[user_id]
+            old_role = user.get('role', 'membro')
+
+            # Atualizar no simulador
+            user['role'] = new_role
+
+            # Atualizar prioridade baseada no cargo
+            if new_role in ['pastor', 'lider', 'diacono']:
+                user['priority_speaker'] = True
+            else:
+                user['priority_speaker'] = False
+
+            # Salvar no banco de dados
+            success = self.data_manager.save_user_role(
+                user['hash'],
+                user['name'],
+                new_role,
+                assigned_by
+            )
+
+            if success:
+                self.log_action('CHANGE_USER_ROLE',
+                                f'Cargo alterado de {old_role} para {new_role}',
+                                user_affected=user['name'])
+                logger.info(f"Cargo atualizado: {user['name']} -> {new_role}")
+                return True
+            else:
+                # Reverter mudança se falhou ao salvar
+                user['role'] = old_role
+                return False
+
+        return False
 
     def log_action(self, action, details='', user_affected='', channel_affected=''):
         log_entry = {
@@ -235,6 +428,13 @@ class AdvancedMumbleSimulator:
         return self.channels
 
     def get_users(self):
+        # Atualizar atividade dos usuários
+        for user_id, user in self.users.items():
+            self.data_manager.update_user_activity(
+                user['hash'],
+                user['name'],
+                user.get('online_time', 0)
+            )
         return self.users
 
     def get_server_info(self):
@@ -328,7 +528,8 @@ class AdvancedMumbleSimulator:
                 'user_hash': user_hash,
                 'reason': reason,
                 'banned_at': datetime.now(),
-                'banned_until': datetime.now() + timedelta(hours=duration_hours) if duration_hours > 0 else None
+                'banned_until': datetime.now() + timedelta(hours=duration_hours) if duration_hours > 0 else None,
+                'banned_by': 'Admin'
             }
 
             self.banned_users.append(ban_entry)
@@ -387,56 +588,17 @@ class AdvancedMumbleSimulator:
             return True
         return False
 
-    def start_recording(self, channel_id):
-        if channel_id in self.channels:
-            channel_name = self.channels[channel_id]['name']
-            self.log_action('START_RECORDING', f'Gravação iniciada no canal "{channel_name}"',
-                            channel_affected=channel_name)
-            return True
-        return False
-
-    def stop_recording(self, channel_id):
-        if channel_id in self.channels:
-            channel_name = self.channels[channel_id]['name']
-            self.log_action('STOP_RECORDING', f'Gravação parada no canal "{channel_name}"',
-                            channel_affected=channel_name)
-            return True
-        return False
-
-    def update_server_config(self, config):
-        for key, value in config.items():
-            if key in self.server_info:
-                self.server_info[key] = value
-        self.log_action('UPDATE_CONFIG', f'Configurações do servidor atualizadas: {list(config.keys())}')
-        return True
-
     def get_logs(self, limit=100):
         return self.server_logs[-limit:]
 
     def get_banned_users(self):
         return self.banned_users
 
-    def get_acl_groups(self):
-        return self.acl_groups
 
-    def create_acl_group(self, group_name, users=None):
-        if users is None:
-            users = []
-        self.acl_groups[group_name] = users
-        self.log_action('CREATE_ACL_GROUP', f'Grupo ACL "{group_name}" criado com {len(users)} usuários')
-        return True
-
-    def delete_acl_group(self, group_name):
-        if group_name in self.acl_groups and group_name not in ['admin', 'moderator', 'member']:
-            del self.acl_groups[group_name]
-            self.log_action('DELETE_ACL_GROUP', f'Grupo ACL "{group_name}" removido')
-            return True
-        return False
-
-
-# Classe principal do controlador Mumble avançado
+# Classe principal do controlador Mumble
 class AdvancedMumbleController:
     def __init__(self):
+        self.data_manager = UserDataManager()
         self.server = None
         self.connected = False
         self.simulation_mode = not ICE_AVAILABLE
@@ -445,7 +607,7 @@ class AdvancedMumbleController:
         self.monitoring_thread = None
 
         if self.simulation_mode:
-            self.server = AdvancedMumbleSimulator()
+            self.server = AdvancedMumbleSimulator(self.data_manager)
             self.connected = True
             logger.info("Modo simulação ativado")
         else:
@@ -496,7 +658,7 @@ class AdvancedMumbleController:
         except Exception as e:
             logger.error(f"Erro na conexão: {e}")
             logger.info("Ativando modo simulação")
-            self.server = AdvancedMumbleSimulator()
+            self.server = AdvancedMumbleSimulator(self.data_manager)
             self.simulation_mode = True
             self.connected = True
             return False
@@ -536,8 +698,8 @@ class AdvancedMumbleController:
                 stats.get('users', 0),
                 stats.get('channels', 0),
                 stats.get('bandwidth', 0),
-                0,  # CPU usage (não disponível no simulador)
-                0  # Memory usage (não disponível no simulador)
+                0,  # CPU usage
+                0  # Memory usage
             ))
 
             conn.commit()
@@ -599,12 +761,12 @@ class AdvancedMumbleController:
             return {
                 'users': len(users),
                 'channels': len(channels),
-                'bandwidth': 128000  # Placeholder
+                'bandwidth': 128000
             }
         except Exception as e:
             return {'users': 0, 'channels': 0, 'bandwidth': 0}
 
-    # Métodos de gerenciamento (delegando para o simulador ou servidor real)
+    # Métodos de gerenciamento
     def get_channels(self):
         if self.simulation_mode:
             return self.server.get_channels()
@@ -621,7 +783,7 @@ class AdvancedMumbleController:
                     'temporary': getattr(channel_state, 'temporary', False),
                     'position': getattr(channel_state, 'position', 0),
                     'max_users': getattr(channel_state, 'maxUsers', 0),
-                    'password': '',  # Não expor senha
+                    'password': '',
                     'acl': [],
                     'links': []
                 }
@@ -638,6 +800,9 @@ class AdvancedMumbleController:
             users = self.server.getUsers(self.ctx)
             result = {}
             for user_id, user_state in users.items():
+                user_hash = getattr(user_state, 'hash', f'hash_{user_id}')
+                saved_role = self.data_manager.get_user_role(user_hash)
+
                 result[user_id] = {
                     'name': user_state.name,
                     'channel': user_state.channel,
@@ -654,35 +819,57 @@ class AdvancedMumbleController:
                     'version': getattr(user_state, 'version', ''),
                     'os': getattr(user_state, 'os', ''),
                     'address': getattr(user_state, 'address', ''),
-                    'hash': getattr(user_state, 'hash', ''),
+                    'hash': user_hash,
                     'identity': getattr(user_state, 'identity', ''),
                     'context': getattr(user_state, 'context', ''),
-                    'comment': getattr(user_state, 'comment', '')
+                    'comment': getattr(user_state, 'comment', ''),
+                    'role': saved_role  # Carregar do banco
                 }
             return result
         except Exception as e:
             logger.error(f"Erro ao obter usuários: {e}")
             return {}
 
-    # Métodos de controle (implementar todos os métodos do simulador)
+    # Método específico para mudança de cargo
+    def change_user_role(self, user_id, new_role, assigned_by='Admin'):
+        """Muda o cargo do usuário de forma persistente"""
+        if self.simulation_mode:
+            return self.server.update_user_role(user_id, new_role, assigned_by)
+
+        # Para servidor real, salvar no banco e aplicar lógica
+        try:
+            users = self.get_users()
+            if user_id in users:
+                user = users[user_id]
+                user_hash = user['hash']
+                user_name = user['name']
+
+                # Salvar no banco
+                success = self.data_manager.save_user_role(user_hash, user_name, new_role, assigned_by)
+
+                if success:
+                    # Aplicar prioridade se necessário
+                    if new_role in ['pastor', 'lider', 'diacono']:
+                        self.set_priority_speaker(user_id, True)
+
+                    self.log_activity('CHANGE_USER_ROLE',
+                                      f'Cargo alterado para {new_role}',
+                                      user_affected=user_name,
+                                      admin_ip=request.remote_addr if request else '')
+                    return True
+
+            return False
+        except Exception as e:
+            logger.error(f"Erro ao alterar cargo: {e}")
+            return False
+
+    # Métodos de controle (mantidos iguais)
     def create_channel(self, name, parent_id=0, description='', temporary=False, max_users=0, password=''):
         if self.simulation_mode:
             return self.server.create_channel(name, parent_id, description, temporary, max_users, password)
 
         try:
             channel_id = self.server.addChannel(name, parent_id, self.ctx)
-
-            # Configurar propriedades do canal
-            try:
-                channel_state = self.server.getChannelState(channel_id, self.ctx)
-                channel_state.description = description
-                channel_state.temporary = temporary
-                if max_users > 0:
-                    channel_state.maxUsers = max_users
-                self.server.setChannelState(channel_state, self.ctx)
-            except:
-                pass
-
             self.log_activity('CREATE_CHANNEL', f'Canal "{name}" criado', channel_affected=name,
                               admin_ip=request.remote_addr if request else '')
             return channel_id
@@ -751,7 +938,6 @@ class AdvancedMumbleController:
             user_name = user.get('name', 'Desconhecido')
             user_hash = user.get('hash', '')
 
-            # Banir usuário
             self.server.banUser(user_id, reason, self.ctx)
 
             # Registrar no banco local
@@ -920,21 +1106,6 @@ class AdvancedMumbleController:
             logger.error(f"Erro ao obter usuários banidos: {e}")
             return []
 
-    def update_server_config(self, config):
-        """Atualiza configurações do servidor"""
-        if self.simulation_mode:
-            return self.server.update_server_config(config)
-
-        try:
-            # Implementar configurações reais do servidor
-            # Isso depende das configurações específicas disponíveis na API Ice
-            self.log_activity('UPDATE_CONFIG', f'Configurações atualizadas: {list(config.keys())}',
-                              admin_ip=request.remote_addr if request else '')
-            return True
-        except Exception as e:
-            logger.error(f"Erro ao atualizar configurações: {e}")
-            return False
-
 
 # Instância global do controlador
 mumble = AdvancedMumbleController()
@@ -996,19 +1167,25 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    server_status = mumble.get_server_status()
+    dark_mode = get_user_preference('dark_mode', 'false') == 'true'
+
     if request.method == 'POST':
+        username = request.form.get('username')
         password = request.form.get('password')
-        if password == AUTH_CONFIG['admin_password']:
+
+        if username == 'admin' and password == AUTH_CONFIG['admin_password']:
             response = redirect(url_for('dashboard'))
             response.set_cookie('authenticated', 'true', max_age=AUTH_CONFIG['session_timeout'])
 
             mumble.log_activity('ADMIN_LOGIN', 'Administrador fez login', admin_ip=request.remote_addr)
+            flash('Login realizado com sucesso!', 'success')
             return response
         else:
-            flash('Senha incorreta!', 'error')
+            flash('Usuário ou senha incorretos!', 'error')
             mumble.log_activity('ADMIN_LOGIN_FAILED', 'Tentativa de login falhada', admin_ip=request.remote_addr)
 
-    return render_template('login.html')
+    return render_template('login.html', server_status=server_status, dark_mode=dark_mode)
 
 
 @app.route('/logout')
@@ -1038,7 +1215,6 @@ def dashboard():
         'deafened_users': len([u for u in users.values() if u.get('deaf', False)])
     }
 
-    # Obter tema do usuário
     dark_mode = get_user_preference('dark_mode', 'false') == 'true'
 
     return render_template('dashboard.html',
@@ -1055,7 +1231,7 @@ def dashboard():
 def channels():
     channels = mumble.get_channels()
     users = mumble.get_users()
-    server_status = mumble.get_server_status()  # Adicionar esta linha
+    server_status = mumble.get_server_status()
 
     # Organizar usuários por canal
     for channel_id, channel in channels.items():
@@ -1072,7 +1248,7 @@ def users():
     users = mumble.get_users()
     channels = mumble.get_channels()
     banned_users = mumble.get_banned_users()
-    server_status = mumble.get_server_status()  # Adicionar esta linha
+    server_status = mumble.get_server_status()
 
     dark_mode = get_user_preference('dark_mode', 'false') == 'true'
     return render_template('users.html', users=users, channels=channels, banned_users=banned_users,
@@ -1083,7 +1259,7 @@ def users():
 @require_auth
 def logs():
     logs = mumble.get_activity_logs(200)
-    server_status = mumble.get_server_status()  # Adicionar esta linha
+    server_status = mumble.get_server_status()
     dark_mode = get_user_preference('dark_mode', 'false') == 'true'
     return render_template('logs.html', logs=logs, server_status=server_status, dark_mode=dark_mode)
 
@@ -1097,7 +1273,7 @@ def settings():
                            dark_mode=dark_mode)
 
 
-# APIs (todas as funcionalidades)
+# APIs - Todas as funcionalidades necessárias
 @app.route('/api/create_channel', methods=['POST'])
 @require_auth
 def api_create_channel():
@@ -1169,6 +1345,37 @@ def api_ban_user():
         return jsonify({'success': True})
     else:
         return jsonify({'success': False, 'error': 'Erro ao banir usuário'})
+
+
+@app.route('/api/unban_user', methods=['POST'])
+@require_auth
+def api_unban_user():
+    data = request.get_json()
+    user_hash = data.get('user_hash')
+
+    if not user_hash:
+        return jsonify({'success': False, 'error': 'Hash do usuário é obrigatório'})
+
+    try:
+        # Remover do banco de dados local
+        conn = sqlite3.connect('mumble_panel.db')
+        cursor = conn.cursor()
+
+        cursor.execute('DELETE FROM banned_users WHERE user_hash = ?', (user_hash,))
+        affected_rows = cursor.rowcount
+
+        conn.commit()
+        conn.close()
+
+        if affected_rows > 0:
+            mumble.log_activity('UNBAN_USER', 'Usuário desbanido', admin_ip=request.remote_addr)
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Usuário não encontrado na lista de banidos'})
+
+    except Exception as e:
+        logger.error(f"Erro ao desbanir usuário: {e}")
+        return jsonify({'success': False, 'error': 'Erro interno do servidor'})
 
 
 @app.route('/api/send_message', methods=['POST'])
@@ -1271,10 +1478,25 @@ def api_get_stats():
 def api_update_server_config():
     data = request.get_json()
 
-    if mumble.update_server_config(data):
+    # Atualizar configurações no banco
+    try:
+        conn = sqlite3.connect('mumble_panel.db')
+        cursor = conn.cursor()
+
+        for key, value in data.items():
+            cursor.execute('''
+                INSERT OR REPLACE INTO server_config (key, value)
+                VALUES (?, ?)
+            ''', (key, str(value)))
+
+        conn.commit()
+        conn.close()
+
+        mumble.log_activity('UPDATE_CONFIG', f'Configurações atualizadas: {list(data.keys())}',
+                            admin_ip=request.remote_addr)
         return jsonify({'success': True})
-    else:
-        return jsonify({'success': False, 'error': 'Erro ao atualizar configurações'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/toggle_dark_mode', methods=['POST'])
@@ -1289,10 +1511,270 @@ def api_toggle_dark_mode():
         return jsonify({'success': False, 'error': 'Erro ao salvar preferência'})
 
 
+@app.route('/api/change_user_role', methods=['POST'])
+@require_auth
+def api_change_user_role():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    new_role = data.get('new_role')
+    reason = data.get('reason', '')
+    notify_user = data.get('notify_user', False)
+
+    if user_id and new_role:
+        # Usar o método específico para mudança de cargo
+        success = mumble.change_user_role(user_id, new_role, 'Admin')
+
+        if success:
+            # Enviar notificação se solicitado
+            if notify_user:
+                users = mumble.get_users()
+                if user_id in users:
+                    user_name = users[user_id]['name']
+                    message = f"Seu cargo foi alterado para {new_role.title()}. Motivo: {reason}"
+                    mumble.send_message(message, user_id=user_id)
+
+            return jsonify({'success': True, 'message': f'Cargo alterado para {new_role} com sucesso!'})
+        else:
+            return jsonify({'success': False, 'error': 'Erro ao alterar cargo do usuário'})
+    else:
+        return jsonify({'success': False, 'error': 'Dados inválidos - user_id e new_role são obrigatórios'})
+
+
+@app.route('/api/bulk_user_action', methods=['POST'])
+@require_auth
+def api_bulk_user_action():
+    data = request.get_json()
+    action = data.get('action')
+    user_ids = data.get('user_ids', [])
+    reason = data.get('reason', '')
+    channel_id = data.get('channel_id')
+    role = data.get('role')
+    ban_duration = data.get('ban_duration', 0)
+
+    if not user_ids:
+        return jsonify({'success': False, 'error': 'Nenhum usuário selecionado'})
+
+    success_count = 0
+    failed_count = 0
+
+    for user_id in user_ids:
+        try:
+            if action == 'mute':
+                if mumble.mute_user(user_id, True):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            elif action == 'unmute':
+                if mumble.mute_user(user_id, False):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            elif action == 'mute_except_priority':
+                users = mumble.get_users()
+                if user_id in users and not users[user_id].get('priority_speaker', False):
+                    if mumble.mute_user(user_id, True):
+                        success_count += 1
+                    else:
+                        failed_count += 1
+                else:
+                    # Usuário é prioritário, não silenciar
+                    continue
+            elif action == 'deafen':
+                if mumble.deafen_user(user_id, True):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            elif action == 'undeafen':
+                if mumble.deafen_user(user_id, False):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            elif action == 'priority':
+                if mumble.set_priority_speaker(user_id, True):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            elif action == 'unpriority':
+                if mumble.set_priority_speaker(user_id, False):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            elif action == 'move' and channel_id:
+                if mumble.move_user(user_id, channel_id):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            elif action == 'kick':
+                if mumble.kick_user(user_id, reason):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            elif action == 'ban':
+                if mumble.ban_user(user_id, reason, ban_duration):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            elif action == 'role' and role:
+                # Usar o método específico para mudança de cargo
+                if mumble.change_user_role(user_id, role, 'Admin'):
+                    success_count += 1
+                else:
+                    failed_count += 1
+            else:
+                failed_count += 1
+
+        except Exception as e:
+            logger.error(f"Erro na ação em massa para usuário {user_id}: {e}")
+            failed_count += 1
+
+    mumble.log_activity('BULK_USER_ACTION',
+                        f'Ação "{action}" executada em {success_count}/{len(user_ids)} usuários. Motivo: {reason}',
+                        admin_ip=request.remote_addr)
+
+    if success_count > 0:
+        message = f'Ação executada com sucesso em {success_count} usuário(s)'
+        if failed_count > 0:
+            message += f'. {failed_count} falharam.'
+        return jsonify({'success': True, 'affected_users': success_count, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': f'Nenhuma ação foi executada com sucesso. {failed_count} falharam.'})
+
+
+@app.route('/api/organize_users_by_role', methods=['POST'])
+@require_auth
+def api_organize_users_by_role():
+    """Organiza usuários por cargo nos canais apropriados"""
+    try:
+        users = mumble.get_users()
+        channels = mumble.get_channels()
+
+        # Mapeamento de cargos para canais
+        role_channel_map = {
+            'pastor': 2,  # Liderança
+            'lider': 2,  # Liderança
+            'diacono': 2,  # Liderança
+            'musico': 3,  # Ministério de Louvor
+            'tecnico': 6,  # Equipe Técnica
+            'membro': 1,  # Lobby Principal
+            'visitante': 1  # Lobby Principal
+        }
+
+        moved_count = 0
+        for user_id, user in users.items():
+            user_role = user.get('role', 'membro')
+            target_channel = role_channel_map.get(user_role, 1)
+
+            if user['channel'] != target_channel:
+                if mumble.move_user(user_id, target_channel):
+                    moved_count += 1
+
+        mumble.log_activity('ORGANIZE_BY_ROLE', f'{moved_count} usuários organizados por cargo',
+                            admin_ip=request.remote_addr)
+
+        return jsonify(
+            {'success': True, 'moved_users': moved_count, 'message': f'{moved_count} usuários organizados por cargo'})
+    except Exception as e:
+        logger.error(f"Erro ao organizar usuários por cargo: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/save_role_configuration', methods=['POST'])
+@require_auth
+def api_save_role_configuration():
+    """Salva configurações de cargos"""
+    data = request.get_json()
+
+    try:
+        conn = sqlite3.connect('mumble_panel.db')
+        cursor = conn.cursor()
+
+        for key, value in data.items():
+            cursor.execute('''
+                INSERT OR REPLACE INTO server_config (key, value)
+                VALUES (?, ?)
+            ''', (f'role_config_{key}', str(value)))
+
+        conn.commit()
+        conn.close()
+
+        mumble.log_activity('SAVE_ROLE_CONFIG', 'Configurações de cargos salvas',
+                            admin_ip=request.remote_addr)
+
+        return jsonify({'success': True, 'message': 'Configurações de cargos salvas com sucesso!'})
+    except Exception as e:
+        logger.error(f"Erro ao salvar configurações de cargos: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/clear_expired_bans', methods=['POST'])
+@require_auth
+def api_clear_expired_bans():
+    """Remove banimentos expirados"""
+    try:
+        conn = sqlite3.connect('mumble_panel.db')
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            DELETE FROM banned_users 
+            WHERE banned_until IS NOT NULL AND banned_until < datetime('now')
+        ''')
+
+        cleared_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+
+        mumble.log_activity('CLEAR_EXPIRED_BANS', f'{cleared_count} banimentos expirados removidos',
+                            admin_ip=request.remote_addr)
+
+        return jsonify({'success': True, 'cleared_count': cleared_count,
+                        'message': f'{cleared_count} banimentos expirados removidos'})
+    except Exception as e:
+        logger.error(f"Erro ao limpar banimentos expirados: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/save_settings', methods=['POST'])
+@require_auth
+def save_settings():
+    """Salva configurações do cliente"""
+    data = request.get_json()
+
+    try:
+        conn = sqlite3.connect('mumble_panel.db')
+        cursor = conn.cursor()
+
+        # Salvar configurações como JSON
+        settings_json = json.dumps(data)
+        cursor.execute('''
+            INSERT OR REPLACE INTO server_config (key, value)
+            VALUES (?, ?)
+        ''', ('client_settings', settings_json))
+
+        conn.commit()
+        conn.close()
+
+        mumble.log_activity('SAVE_CLIENT_SETTINGS', 'Configurações do cliente salvas',
+                            admin_ip=request.remote_addr)
+
+        return jsonify({'success': True, 'message': 'Configurações salvas com sucesso!'})
+    except Exception as e:
+        logger.error(f"Erro ao salvar configurações: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Serve arquivos estáticos"""
+    return send_file(os.path.join('static', filename))
+
+
+
+
 if __name__ == '__main__':
-    print("PAINEL MUMBLE AVANÇADO - IGREJA AVIVANDO AS NACOES")
+    print("PAINEL MUMBLE AVANÇADO - IGREJA AVIVANDO AS NAÇÕES")
     print("=" * 70)
     print(f"Acesse: http://127.0.0.1:5000")
+    print(f"Usuário: admin")
     print(f"Senha: {AUTH_CONFIG['admin_password']}")
     print(f"Modo: {'Simulação' if mumble.simulation_mode else 'Real'}")
     print(f"Monitoramento: {'Ativo' if mumble.monitoring_active else 'Inativo'}")
@@ -1300,14 +1782,19 @@ if __name__ == '__main__':
     print("Funcionalidades disponíveis:")
     print("   • Dashboard com estatísticas em tempo real")
     print("   • Gerenciamento completo de canais")
-    print("   • Controle total de usuários")
-    print("   • Sistema de mensagens")
-    print("   • Logs de atividade")
-    print("   • Configurações do servidor")
-    print("   • Sistema de banimento")
-    print("   • Oradores prioritários")
+    print("   • Controle total de usuários com cargos PERSISTENTES")
+    print("   • Sistema de mensagens globais e privadas")
+    print("   • Logs de atividade detalhados")
+    print("   • Configurações avançadas do servidor")
+    print("   • Sistema de banimento com duração")
+    print("   • Oradores prioritários por cargo")
+    print("   • Ações em massa para usuários")
     print("   • Interface moderna e responsiva")
-    print("   • MODO ESCURO/CLARO")
+    print("   • Modo escuro/claro")
+    print("   • Organização automática por cargos")
+    print("   • Filtros avançados de usuários")
+    print("   • Exportação de dados")
+    print("   • PERSISTÊNCIA DE CARGOS NO BANCO DE DADOS")
     print("=" * 70)
 
     try:

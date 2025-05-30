@@ -1,241 +1,620 @@
-#!/usr/bin/env python3
-"""
-Script para testar a configuração do Mumble Server e conectividade
-"""
-
-import Ice
 import sys
-import time
-import socket
-import subprocess
-import os
+import Ice
+import MumbleServer
 
 
-def test_port_availability(port):
-    """Testa se uma porta está disponível"""
+def create_church_channels(server):
+    """
+    Cria uma estrutura de canais organizados para a Igreja Avivando as Nações
+    """
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(2)
-        result = sock.connect_ex(('127.0.0.1', port))
-        sock.close()
-        return result == 0  # 0 significa que conectou (porta em uso)
-    except:
-        return False
+        # Obter o canal raiz (ID 0)
+        root_channel = server.getChannelState(0)
 
+        # Estrutura de canais para a igreja
+        channels_structure = {
+            "Liderança": {
+                "description": "Canal para liderança da igreja",
+                "subchannels": {
+                    "Pastores": "Canal exclusivo dos pastores",
+                    "Diáconos": "Canal dos diáconos",
+                    "Líderes de Ministério": "Canal para líderes de ministérios"
+                }
+            },
+            "Ministérios": {
+                "description": "Canais dos ministérios da igreja",
+                "subchannels": {
+                    "Louvor": "Canal do ministério de louvor",
+                    "Jovens": "Canal do ministério jovem",
+                    "Crianças": "Canal do ministério infantil",
+                    "Som e Mídia": "Canal da equipe técnica",
+                    "Intercessão": "Canal do ministério de intercessão"
+                }
+            },
+            "Departamentos": {
+                "description": "Canais administrativos",
+                "subchannels": {
+                    "Administração": "Canal administrativo",
+                    "Secretaria": "Canal da secretaria",
+                    "Tesouraria": "Canal financeiro"
+                }
+            },
+            "Eventos": {
+                "description": "Canais para eventos especiais",
+                "subchannels": {
+                    "Cultos Especiais": "Canal para organização de cultos especiais",
+                    "Retiros": "Canal para organização de retiros",
+                    "Conferências": "Canal para conferências"
+                }
+            },
+            "Geral": {
+                "description": "Canais de uso geral",
+                "subchannels": {
+                    "Sala de Espera": "Canal para aguardar atendimento",
+                    "Coordenação Geral": "Canal de coordenação durante eventos"
+                }
+            }
+        }
 
-def validate_config_file(config_path="murmur.ini"):
-    """Valida o arquivo de configuração"""
-    print(f"📋 Validando arquivo de configuração: {config_path}")
+        created_channels = {}
 
-    if not os.path.exists(config_path):
-        print(f"❌ Arquivo não encontrado: {config_path}")
-        return False
+        # Criar canais principais
+        for main_channel_name, main_channel_info in channels_structure.items():
+            print(f"Criando canal principal: {main_channel_name}")
 
-    required_settings = {
-        'ice=': 'Configuração Ice para administração remota',
-        'icesecretwrite=': 'Senha para escrita via Ice',
-        'port=': 'Porta do servidor Mumble',
-        'database=': 'Arquivo de banco de dados'
-    }
+            # Criar o canal principal
+            main_channel_id = create_channel(
+                server,
+                main_channel_name,
+                main_channel_info["description"],
+                parent_id=0
+            )
 
-    found_settings = {}
+            if main_channel_id:
+                created_channels[main_channel_name] = {
+                    'id': main_channel_id,
+                    'subchannels': {}
+                }
 
-    try:
-        with open(config_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+                # Criar subcanais
+                for subchannel_name, subchannel_desc in main_channel_info["subchannels"].items():
+                    print(f"  Criando subcanal: {subchannel_name}")
 
-        for setting, description in required_settings.items():
-            lines = [line.strip() for line in content.split('\n')
-                     if line.strip().startswith(setting) and not line.strip().startswith(';')]
+                    subchannel_id = create_channel(
+                        server,
+                        subchannel_name,
+                        subchannel_desc,
+                        parent_id=main_channel_id
+                    )
 
-            if lines:
-                found_settings[setting] = lines[0]
-                print(f"✅ {description}: {lines[0]}")
-            else:
-                print(f"❌ {description}: NÃO ENCONTRADO")
+                    if subchannel_id:
+                        created_channels[main_channel_name]['subchannels'][subchannel_name] = subchannel_id
+
+        return created_channels
 
     except Exception as e:
-        print(f"❌ Erro ao ler arquivo: {e}")
+        print(f"Erro ao criar estrutura de canais: {e}")
+        return None
+
+
+def create_channel(server, name, description="", parent_id=0, temporary=False):
+    """
+    Cria um canal individual no servidor Mumble
+
+    Args:
+        server: Instância do servidor Mumble
+        name: Nome do canal
+        description: Descrição do canal
+        parent_id: ID do canal pai (0 para canal raiz)
+        temporary: Se o canal é temporário
+
+    Returns:
+        int: ID do canal criado ou None se houver erro
+    """
+    try:
+        print(f"Tentando criar canal '{name}' no parent {parent_id}...")
+
+        # Método principal: Usar addChannel
+        new_channel_id = server.addChannel(name, parent_id)
+        print(f"Canal '{name}' criado com ID: {new_channel_id}")
+
+        # Definir descrição se fornecida
+        if description:
+            try:
+                channel_state = server.getChannelState(new_channel_id)
+                channel_state.description = description
+                server.setChannelState(channel_state)
+                print(f"Descrição definida para canal '{name}'")
+            except Exception as desc_error:
+                print(f"Aviso: Não foi possível definir descrição: {desc_error}")
+
+        return new_channel_id
+
+    except Exception as e:
+        print(f"Erro ao criar canal '{name}': {e}")
+        return None
+
+
+def list_existing_channels(server):
+    """
+    Lista todos os canais existentes no servidor
+    """
+    try:
+        print("\n=== CANAIS EXISTENTES ===")
+
+        # Obter todos os canais
+        all_channels = server.getChannels()
+
+        # Organizar canais por hierarquia
+        channels_by_parent = {}
+        root_channels = []
+
+        for channel_id, channel_state in all_channels.items():
+            if channel_state.parent == 0:
+                root_channels.append((channel_id, channel_state))
+            else:
+                if channel_state.parent not in channels_by_parent:
+                    channels_by_parent[channel_state.parent] = []
+                channels_by_parent[channel_state.parent].append((channel_id, channel_state))
+
+        # Exibir canais raiz
+        for channel_id, channel_state in sorted(root_channels, key=lambda x: x[1].name):
+            print(f"[{channel_id}] {channel_state.name}")
+            if channel_state.description:
+                print(f"    Descrição: {channel_state.description}")
+
+            # Exibir subcanais
+            if channel_id in channels_by_parent:
+                for sub_id, sub_state in sorted(channels_by_parent[channel_id], key=lambda x: x[1].name):
+                    print(f"  └─ [{sub_id}] {sub_state.name}")
+                    if sub_state.description:
+                        print(f"      Descrição: {sub_state.description}")
+
+        return all_channels
+
+    except Exception as e:
+        print(f"Erro ao listar canais: {e}")
+        return None
+
+
+def delete_channel(server, channel_id):
+    """
+    Remove um canal do servidor
+    """
+    try:
+        server.removeChannel(channel_id)
+        print(f"Canal ID {channel_id} removido com sucesso")
+        return True
+    except Exception as e:
+        print(f"Erro ao remover canal ID {channel_id}: {e}")
         return False
 
-    return len(found_settings) == len(required_settings)
+
+def debug_server_methods(server):
+    """
+    Lista todos os métodos disponíveis no servidor para debug
+    """
+    print("\n=== MÉTODOS DISPONÍVEIS NO SERVIDOR ===")
+    methods = [method for method in dir(server) if not method.startswith('_')]
+    for method in sorted(methods):
+        print(f"  {method}")
+    print("=" * 40)
 
 
-def test_mumble_connectivity():
-    """Testa conectividade com o servidor Mumble"""
-    print("\n🔌 Testando conectividade com Mumble Server...")
+def setup_ice_authentication(communicator, secret):
+    """
+    Configura a autenticação ICE adequadamente
+    """
+    try:
+        # Método 1: Configurar contexto implícito
+        ic = communicator.getImplicitContext()
+        if ic:
+            ic.put("secret", secret)
+            print(f"Contexto implícito configurado com secret")
+            return True
+    except Exception as e:
+        print(f"Erro ao configurar contexto implícito: {e}")
 
-    # Verificar se as portas estão em uso
-    ports_to_check = [64738, 6502]  # Mumble e Ice
-
-    for port in ports_to_check:
-        if test_port_availability(port):
-            if port == 64738:
-                print(f"✅ Porta {port} (Mumble Server) está ativa")
-            elif port == 6502:
-                print(f"✅ Porta {port} (Ice Interface) está ativa")
-        else:
-            print(f"❌ Porta {port} não está respondendo")
-            if port == 64738:
-                print("   💡 Execute o Mumble Server primeiro")
-            elif port == 6502:
-                print("   💡 Verifique a configuração Ice no arquivo .ini")
-
-    # Testar conexão Ice se a porta estiver ativa
-    if test_port_availability(6502):
-        return test_ice_connection()
-    else:
-        print("⚠️ Não foi possível testar Ice - servidor não está rodando")
-        return False
+    return False
 
 
-def test_ice_connection():
-    """Testa conexão específica via Ice"""
-    communicator = None
+def test_permissions(server):
+    """
+    Testa diferentes operações para verificar permissões
+    """
+    print("\n=== TESTE DE PERMISSÕES ===")
 
     try:
-        print("🧊 Testando conexão Ice...")
+        # Teste 1: Listar canais
+        channels = server.getChannels()
+        print(f"✓ Consegue listar canais: {len(channels)} encontrados")
 
-        # Inicializar Ice
-        init_data = Ice.InitializationData()
-        init_data.properties = Ice.createProperties()
-        init_data.properties.setProperty("Ice.ImplicitContext", "Shared")
-
-        communicator = Ice.initialize(init_data)
-
-        # Tentar conectar
-        proxy_string = "Meta:tcp -h 127.0.0.1 -p 6502"
-        base_proxy = communicator.stringToProxy(proxy_string)
-
-        # Testar ping básico
-        base_proxy.ice_ping()
-        print("✅ Ping Ice bem-sucedido!")
-
-        # Tentar importar Murmur
+        # Teste 2: Obter configurações
         try:
-            import Murmur
-            print("✅ Módulo Murmur carregado!")
+            conf = server.getAllConf()
+            print("✓ Consegue obter configurações do servidor")
+        except Exception as e:
+            print(f"✗ Não consegue obter configurações: {e}")
 
-            # Tentar cast
-            meta_proxy = Murmur.MetaPrx.checkedCast(base_proxy)
+        # Teste 3: Tentar criar canal de teste
+        try:
+            test_id = server.addChannel("TESTE_PERMISSAO", 0)
+            print(f"✓ Consegue criar canais: canal teste criado com ID {test_id}")
 
-            if meta_proxy:
-                print("✅ Meta proxy conectado!")
+            # Remover canal de teste
+            try:
+                server.removeChannel(test_id)
+                print("✓ Consegue remover canais: canal teste removido")
+            except Exception as e:
+                print(f"✗ Não consegue remover canais: {e}")
 
-                # Obter informações do servidor
-                servers = meta_proxy.getBootedServers()
-                print(f"📊 Servidores ativos: {len(servers)}")
-
-                if servers:
-                    server = servers[0]
-
-                    # Informações básicas
-                    try:
-                        server_name = server.getConf('servername')
-                        max_users = server.getConf('users')
-                        port = server.getConf('port')
-
-                        print(f"🏛️ Nome do servidor: {server_name}")
-                        print(f"👥 Máximo de usuários: {max_users}")
-                        print(f"🔌 Porta: {port}")
-
-                        # Estatísticas atuais
-                        users = server.getUsers()
-                        channels = server.getChannels()
-
-                        print(f"👤 Usuários conectados: {len(users)}")
-                        print(f"📺 Canais existentes: {len(channels)}")
-
-                        # Testar se podemos criar um canal de teste
-                        try:
-                            test_channel_id = server.addChannel("🧪 TESTE-CONEXAO", 0)
-                            print("✅ Permissões de escrita funcionando!")
-
-                            # Remover canal de teste
-                            server.removeChannel(test_channel_id)
-                            print("✅ Canal de teste removido com sucesso!")
-
-                        except Exception as e:
-                            print(f"⚠️ Teste de escrita falhou: {e}")
-                            print("💡 Verifique a senha 'icesecretwrite' na configuração")
-
-                        return True
-
-                    except Exception as e:
-                        print(f"⚠️ Erro ao obter informações do servidor: {e}")
-                        return False
-                else:
-                    print("❌ Nenhum servidor ativo encontrado")
-                    return False
-            else:
-                print("❌ Falha no cast do Meta proxy")
-                return False
-
-        except ImportError:
-            print("❌ Módulo Murmur não encontrado!")
-            print("💡 Adicione o diretório do Mumble ao PATH do Python")
-            return False
-
-    except Ice.ConnectFailedException:
-        print("❌ Falha na conexão Ice!")
-        print("💡 Verifique se o servidor está rodando e a porta 6502 está aberta")
-        return False
+        except Exception as e:
+            print(f"✗ Não consegue criar canais: {e}")
 
     except Exception as e:
-        print(f"❌ Erro inesperado na conexão Ice: {e}")
-        return False
-
-    finally:
-        if communicator:
-            communicator.destroy()
-
-
-def print_next_steps(config_valid, server_running):
-    """Mostra próximos passos baseado nos resultados"""
-    print("\n" + "=" * 50)
-    print("📋 RESUMO E PRÓXIMOS PASSOS")
-    print("=" * 50)
-
-    if config_valid and server_running:
-        print("🎉 TUDO OK! Sistema pronto para configuração da igreja!")
-        print("\n✅ Pode executar agora:")
-        print("   python igreja_setup.py --setup")
-        print("\n📌 Credenciais configuradas:")
-        print("   Senha do servidor: AvivandoTec")
-        print("   Porta: 64738")
-        print("   Ice admin: AdminIgreja2024")
-
-    elif config_valid and not server_running:
-        print("⚠️ Configuração OK, mas servidor não está rodando")
-        print("\n🚀 Para iniciar o servidor:")
-        print("   1. Abra CMD como Administrador")
-        print("   2. Navegue até pasta do Mumble")
-        print("   3. Execute: mumble-server.exe -ini mumble-server.ini")
-
-    elif not config_valid:
-        print("❌ Problemas na configuração detectados")
-        print("\n🔧 Verifique:")
-        print("   - Arquivo mumble-server.ini existe")
-        print("   - Configurações obrigatórias presentes")
-        print("   - Sintaxe correta no arquivo")
-
-    print("\n💡 Para monitoramento contínuo:")
-    print("   Execute este script periodicamente para verificar status")
+        print(f"✗ Erro geral de permissões: {e}")
 
 
 def main():
-    """Função principal"""
-    print("🔍 DIAGNÓSTICO COMPLETO DO MUMBLE SERVER")
-    print("=" * 50)
+    # Configurar propriedades ICE para autenticação
+    init_data = Ice.InitializationData()
+    init_data.properties = Ice.createProperties(sys.argv)
 
-    # 1. Validar configuração
-    config_valid = validate_config_file()
+    # CORREÇÃO: Configurações ICE mais específicas
+    init_data.properties.setProperty("Ice.ImplicitContext", "Shared")
+    init_data.properties.setProperty("Ice.Default.EncodingVersion", "1.0")
 
-    # 2. Testar conectividade
-    server_running = test_mumble_connectivity()
+    # Configurações de timeout mais generosas
+    init_data.properties.setProperty("Ice.Override.Timeout", "60000")
+    init_data.properties.setProperty("Ice.Override.ConnectTimeout", "30000")
 
-    # 3. Mostrar próximos passos
-    print_next_steps(config_valid, server_running)
+    with Ice.initialize(sys.argv, init_data) as communicator:
+        try:
+            # Secret que deve corresponder ao icesecretwrite no murmur.ini
+            SECRET = "AdminIgreja2024"
+
+            # Configurar autenticação
+            setup_ice_authentication(communicator, SECRET)
+
+            # Conectar ao servidor Mumble usando as configurações do murmur.ini
+            proxy_string = "Meta:tcp -h 127.0.0.1 -p 6502 -t 60000"
+            base = communicator.stringToProxy(proxy_string)
+
+            # CORREÇÃO: Definir secret no contexto da conexão
+            ctx = {"secret": SECRET}
+            meta = MumbleServer.MetaPrx.checkedCast(base, ctx)
+
+            if meta is None:
+                print("Erro: Não foi possível conectar ao servidor Mumble")
+                print("Verifique se:")
+                print("1. O servidor Mumble está rodando")
+                print("2. As configurações ICE estão corretas no murmur.ini")
+                print("3. A porta 6502 está acessível")
+                print("4. O icesecretwrite está configurado como 'AdminIgreja2024'")
+                return
+
+            print("Conectado ao Meta servidor...")
+
+            # Obter o primeiro servidor disponível
+            servers = meta.getAllServers(ctx)
+            if not servers:
+                print("Nenhum servidor encontrado")
+                return
+
+            server = servers[0]  # Usar o primeiro servidor
+
+            if not server.isRunning(ctx):
+                print("Servidor não está rodando - tentando iniciar...")
+                try:
+                    server.start(ctx)
+                    print("Servidor iniciado com sucesso")
+                except Exception as start_error:
+                    print(f"Erro ao iniciar servidor: {start_error}")
+                    return
+
+            print(f"Conectado ao servidor ID {server.id(ctx)}")
+
+            # IMPORTANTE: Usar contexto em todas as operações
+            def server_with_context(method_name):
+                """Wrapper para automaticamente passar o contexto de autenticação"""
+
+                def wrapper(*args, **kwargs):
+                    method = getattr(server, method_name)
+                    return method(*args, ctx, **kwargs)
+
+                return wrapper
+
+            # Criar wrapper para métodos principais
+            server_methods = {
+                'getChannels': lambda: server.getChannels(ctx),
+                'addChannel': lambda name, parent: server.addChannel(name, parent, ctx),
+                'removeChannel': lambda channel_id: server.removeChannel(channel_id, ctx),
+                'getChannelState': lambda channel_id: server.getChannelState(channel_id, ctx),
+                'setChannelState': lambda channel_state: server.setChannelState(channel_state, ctx),
+                'getAllConf': lambda: server.getAllConf(ctx)
+            }
+
+            # Testar permissões iniciais
+            try:
+                channels = server_methods['getChannels']()
+                print(f"Servidor tem {len(channels)} canais existentes")
+            except Exception as perm_error:
+                print(f"Erro de permissão: {perm_error}")
+                print("Verificar se o secret está correto no murmur.ini")
+                return
+
+            # Menu de opções
+            while True:
+                print("\n=== GERENCIADOR DE CANAIS - IGREJA AVIVANDO AS NAÇÕES ===")
+                print("1. Listar canais existentes")
+                print("2. Criar estrutura completa de canais da igreja")
+                print("3. Criar canal individual")
+                print("4. Remover canal")
+                print("5. Debug - Listar métodos do servidor")
+                print("6. Testar permissões")
+                print("7. Sair")
+
+                choice = input("\nEscolha uma opção: ").strip()
+
+                if choice == "1":
+                    list_existing_channels_with_context(server, ctx)
+
+                elif choice == "2":
+                    print("\nCriando estrutura completa de canais...")
+                    created = create_church_channels_with_context(server, ctx)
+                    if created:
+                        print(f"\nEstrutura criada com sucesso! {len(created)} canais principais criados.")
+                    else:
+                        print("Erro ao criar estrutura de canais")
+
+                elif choice == "3":
+                    name = input("Nome do canal: ").strip()
+                    description = input("Descrição (opcional): ").strip()
+                    parent_id = input("ID do canal pai (0 para raiz): ").strip()
+
+                    try:
+                        parent_id = int(parent_id) if parent_id else 0
+                        channel_id = create_channel_with_context(server, ctx, name, description, parent_id)
+                        if channel_id:
+                            print(f"Canal criado com sucesso! ID: {channel_id}")
+                    except ValueError:
+                        print("ID do canal pai deve ser um número")
+
+                elif choice == "4":
+                    try:
+                        channel_id = int(input("ID do canal para remover: ").strip())
+                        if channel_id == 0:
+                            print("Não é possível remover o canal raiz")
+                        else:
+                            delete_channel_with_context(server, ctx, channel_id)
+                    except ValueError:
+                        print("ID deve ser um número")
+
+                elif choice == "5":
+                    debug_server_methods(server)
+
+                elif choice == "6":
+                    test_permissions_with_context(server, ctx)
+
+                elif choice == "7":
+                    print("Saindo...")
+                    break
+
+                else:
+                    print("Opção inválida")
+
+        except Exception as e:
+            print(f"Erro na conexão: {e}")
+            print("Verifique se o servidor Mumble está rodando e se as configurações ICE estão corretas")
+
+
+# Versões das funções que usam contexto ICE
+def create_channel_with_context(server, ctx, name, description="", parent_id=0, temporary=False):
+    """
+    Cria um canal individual no servidor Mumble usando contexto ICE
+    """
+    try:
+        print(f"Tentando criar canal '{name}' no parent {parent_id}...")
+
+        new_channel_id = server.addChannel(name, parent_id, ctx)
+        print(f"Canal '{name}' criado com ID: {new_channel_id}")
+
+        # Definir descrição se fornecida
+        if description:
+            try:
+                channel_state = server.getChannelState(new_channel_id, ctx)
+                channel_state.description = description
+                server.setChannelState(channel_state, ctx)
+                print(f"Descrição definida para canal '{name}'")
+            except Exception as desc_error:
+                print(f"Aviso: Não foi possível definir descrição: {desc_error}")
+
+        return new_channel_id
+
+    except Exception as e:
+        print(f"Erro ao criar canal '{name}': {e}")
+        return None
+
+
+def list_existing_channels_with_context(server, ctx):
+    """
+    Lista todos os canais existentes no servidor usando contexto ICE
+    """
+    try:
+        print("\n=== CANAIS EXISTENTES ===")
+
+        all_channels = server.getChannels(ctx)
+
+        # Organizar canais por hierarquia
+        channels_by_parent = {}
+        root_channels = []
+
+        for channel_id, channel_state in all_channels.items():
+            if channel_state.parent == 0:
+                root_channels.append((channel_id, channel_state))
+            else:
+                if channel_state.parent not in channels_by_parent:
+                    channels_by_parent[channel_state.parent] = []
+                channels_by_parent[channel_state.parent].append((channel_id, channel_state))
+
+        # Exibir canais raiz
+        for channel_id, channel_state in sorted(root_channels, key=lambda x: x[1].name):
+            print(f"[{channel_id}] {channel_state.name}")
+            if channel_state.description:
+                print(f"    Descrição: {channel_state.description}")
+
+            # Exibir subcanais
+            if channel_id in channels_by_parent:
+                for sub_id, sub_state in sorted(channels_by_parent[channel_id], key=lambda x: x[1].name):
+                    print(f"  └─ [{sub_id}] {sub_state.name}")
+                    if sub_state.description:
+                        print(f"      Descrição: {sub_state.description}")
+
+        return all_channels
+
+    except Exception as e:
+        print(f"Erro ao listar canais: {e}")
+        return None
+
+
+def delete_channel_with_context(server, ctx, channel_id):
+    """
+    Remove um canal do servidor usando contexto ICE
+    """
+    try:
+        server.removeChannel(channel_id, ctx)
+        print(f"Canal ID {channel_id} removido com sucesso")
+        return True
+    except Exception as e:
+        print(f"Erro ao remover canal ID {channel_id}: {e}")
+        return False
+
+
+def create_church_channels_with_context(server, ctx):
+    """
+    Cria estrutura completa usando contexto ICE
+    """
+    try:
+        # Estrutura de canais para a igreja
+        channels_structure = {
+            "Liderança": {
+                "description": "Canal para liderança da igreja",
+                "subchannels": {
+                    "Pastores": "Canal exclusivo dos pastores",
+                    "Diáconos": "Canal dos diáconos",
+                    "Líderes de Ministério": "Canal para líderes de ministérios"
+                }
+            },
+            "Ministérios": {
+                "description": "Canais dos ministérios da igreja",
+                "subchannels": {
+                    "Louvor": "Canal do ministério de louvor",
+                    "Jovens": "Canal do ministério jovem",
+                    "Crianças": "Canal do ministério infantil",
+                    "Som e Mídia": "Canal da equipe técnica",
+                    "Intercessão": "Canal do ministério de intercessão"
+                }
+            },
+            "Departamentos": {
+                "description": "Canais administrativos",
+                "subchannels": {
+                    "Administração": "Canal administrativo",
+                    "Secretaria": "Canal da secretaria",
+                    "Tesouraria": "Canal financeiro"
+                }
+            },
+            "Eventos": {
+                "description": "Canais para eventos especiais",
+                "subchannels": {
+                    "Cultos Especiais": "Canal para organização de cultos especiais",
+                    "Retiros": "Canal para organização de retiros",
+                    "Conferências": "Canal para conferências"
+                }
+            },
+            "Geral": {
+                "description": "Canais de uso geral",
+                "subchannels": {
+                    "Sala de Espera": "Canal para aguardar atendimento",
+                    "Coordenação Geral": "Canal de coordenação durante eventos"
+                }
+            }
+        }
+
+        created_channels = {}
+
+        # Criar canais principais
+        for main_channel_name, main_channel_info in channels_structure.items():
+            print(f"Criando canal principal: {main_channel_name}")
+
+            main_channel_id = create_channel_with_context(
+                server, ctx,
+                main_channel_name,
+                main_channel_info["description"],
+                parent_id=0
+            )
+
+            if main_channel_id:
+                created_channels[main_channel_name] = {
+                    'id': main_channel_id,
+                    'subchannels': {}
+                }
+
+                # Criar subcanais
+                for subchannel_name, subchannel_desc in main_channel_info["subchannels"].items():
+                    print(f"  Criando subcanal: {subchannel_name}")
+
+                    subchannel_id = create_channel_with_context(
+                        server, ctx,
+                        subchannel_name,
+                        subchannel_desc,
+                        parent_id=main_channel_id
+                    )
+
+                    if subchannel_id:
+                        created_channels[main_channel_name]['subchannels'][subchannel_name] = subchannel_id
+
+        return created_channels
+
+    except Exception as e:
+        print(f"Erro ao criar estrutura de canais: {e}")
+        return None
+
+
+def test_permissions_with_context(server, ctx):
+    """
+    Testa permissões usando contexto ICE
+    """
+    print("\n=== TESTE DE PERMISSÕES ===")
+
+    try:
+        # Teste 1: Listar canais
+        channels = server.getChannels(ctx)
+        print(f"✓ Consegue listar canais: {len(channels)} encontrados")
+
+        # Teste 2: Obter configurações
+        try:
+            conf = server.getAllConf(ctx)
+            print("✓ Consegue obter configurações do servidor")
+        except Exception as e:
+            print(f"✗ Não consegue obter configurações: {e}")
+
+        # Teste 3: Tentar criar canal de teste
+        try:
+            test_id = server.addChannel("TESTE_PERMISSAO", 0, ctx)
+            print(f"✓ Consegue criar canais: canal teste criado com ID {test_id}")
+
+            # Remover canal de teste
+            try:
+                server.removeChannel(test_id, ctx)
+                print("✓ Consegue remover canais: canal teste removido")
+            except Exception as e:
+                print(f"✗ Não consegue remover canais: {e}")
+
+        except Exception as e:
+            print(f"✗ Não consegue criar canais: {e}")
+
+    except Exception as e:
+        print(f"✗ Erro geral de permissões: {e}")
 
 
 if __name__ == "__main__":
