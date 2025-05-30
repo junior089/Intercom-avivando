@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block page_title %}Configurações{% endblock %}
+{% block page_subtitle %}Configurações do servidor e sistema{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-success" onclick="saveAllSettings()">
+    <i class="fas fa-save me-2"></i>
+    Salvar Todas
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Configurações do Servidor -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-custom mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-server me-2 text-primary"></i>
+                    Configurações do Servidor Mumble
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="serverConfigForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="serverName" class="form-label">Nome do Servidor</label>
+                            <input type="text" class="form-control" id="serverName" value="{{ mumble_config.server_name }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="maxUsers" class="form-label">Máximo de Usuários</label>
+                            <input type="number" class="form-control" id="maxUsers" value="{{ mumble_config.max_users }}" min="1" max="1000">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="serverHost" class="form-label">Host</label>
+                            <input type="text" class="form-control" id="serverHost" value="{{ mumble_config.host }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="serverPort" class="form-label">Porta</label>
+                            <input type="number" class="form-control" id="serverPort" value="{{ mumble_config.port }}" min="1" max="65535">
+                        </div>
+                        <div class="col-12">
+                            <label for="welcomeText" class="form-label">Mensagem de Boas-vindas</label>
+                            <textarea class="form-control" id="welcomeText" rows="3">{{ mumble_config.welcome_text }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="adminSecret" class="form-label">Senha de Administrador</label>
+                            <input type="password" class="form-control" id="adminSecret" value="{{ mumble_config.secret }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="bandwidth" class="form-label">Largura de Banda (KB/s)</label>
+                            <input type="number" class="form-control" id="bandwidth" value="128" min="32" max="512">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Configurações de Segurança -->
+        <div class="card shadow-custom mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt me-2 text-warning"></i>
+                    Configurações de Segurança
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="securityConfigForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="requireRegistration" checked>
+                                <label class="form-check-label" for="requireRegistration">
+                                    Exigir Registro
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="allowGuests" checked>
+                                <label class="form-check-label" for="allowGuests">
+                                    Permitir Convidados
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableLogging" checked>
+                                <label class="form-check-label" for="enableLogging">
+                                    Habilitar Logs
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableRecording">
+                                <label class="form-check-label" for="enableRecording">
+                                    Permitir Gravação
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="maxIdleTime" class="form-label">Tempo Máximo Inativo (min)</label>
+                            <input type="number" class="form-control" id="maxIdleTime" value="30" min="5" max="120">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="maxMessageLength" class="form-label">Tamanho Máximo da Mensagem</label>
+                            <input type="number" class="form-control" id="maxMessageLength" value="5000" min="100" max="10000">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Configurações de Áudio -->
+        <div class="card shadow-custom">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-volume-up me-2 text-success"></i>
+                    Configurações de Áudio
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="audioConfigForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="audioQuality" class="form-label">Qualidade de Áudio</label>
+                            <select class="form-select" id="audioQuality">
+                                <option value="low">Baixa (32 kbps)</option>
+                                <option value="medium" selected>Média (64 kbps)</option>
+                                <option value="high">Alta (128 kbps)</option>
+                                <option value="ultra">Ultra (256 kbps)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="audioCodec" class="form-label">Codec de Áudio</label>
+                            <select class="form-select" id="audioCodec">
+                                <option value="speex">Speex</option>
+                                <option value="celt" selected>CELT</option>
+                                <option value="opus">Opus</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableEcho" checked>
+                                <label class="form-check-label" for="enableEcho">
+                                    Cancelamento de Eco
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableNoiseSuppression" checked>
+                                <label class="form-check-label" for="enableNoiseSuppression">
+                                    Supressão de Ruído
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Painel de Status -->
+    <div class="col-lg-4">
+        <div class="card shadow-custom mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2 text-info"></i>
+                    Status do Sistema
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Status da Conexão</label>
+                    <div>
+                        <span class="badge bg-{{ 'success' if server_status.connection_status and 'Conectado' in server_status.connection_status else 'danger' }} fs-6">
+                            <i class="fas fa-circle me-1"></i>
+                            {{ server_status.connection_status or 'Desconectado' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Modo de Operação</label>
+                    <div>
+                        <span class="badge bg-{{ 'warning' if server_status.mode == 'Simulação' else 'primary' }} fs-6">
+                            {{ server_status.mode or 'Desconhecido' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Versão do Servidor</label>
+                    <div>{{ server_status.version or '1.4.0' }}</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Usuários Conectados</label>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar" style="width: {{ (server_status.users / server_status.max_users * 100) if server_status.max_users else 0 }}%">
+                            {{ server_status.users or 0 }} / {{ server_status.max_users or 100 }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Uso de Banda</label>
+                    <div>{{ (server_status.bandwidth / 1000) | round(1) if server_status.bandwidth else 0 }} KB/s</div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="restartServer()">
+                        <i class="fas fa-redo me-2"></i>
+                        Reiniciar Servidor
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="backupConfig()">
+                        <i class="fas fa-download me-2"></i>
+                        Backup Config
+                    </button>
+                    <button class="btn btn-outline-info" onclick="viewLogs()">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Ver Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configurações do Painel -->
+        <div class="card shadow-custom">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2 text-secondary"></i>
+                    Configurações do Painel
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="panelTheme" class="form-label">Tema</label>
+                    <select class="form-select" id="panelTheme">
+                        <option value="auto">Automático</option>
+                        <option value="light">Claro</option>
+                        <option value="dark">Escuro</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="refreshInterval" class="form-label">Intervalo de Atualização (seg)</label>
+                    <input type="number" class="form-control" id="refreshInterval" value="30" min="10" max="300">
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="enableNotifications" checked>
+                        <label class="form-check-label" for="enableNotifications">
+                            Notificações
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="enableSounds">
+                        <label class="form-check-label" for="enableSounds">
+                            Sons de Alerta
+                        </label>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button class="btn btn-outline-secondary" onclick="resetPanelSettings()">
+                        <i class="fas fa-undo me-2"></i>
+                        Restaurar Padrões
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function saveAllSettings() {
+    const serverConfig = {
+        server_name: document.getElementById('serverName').value,
+        max_users: parseInt(document.getElementById('maxUsers').value),
+        host: document.getElementById('serverHost').value,
+        port: parseInt(document.getElementById('serverPort').value),
+        welcome_text: document.getElementById('welcomeText').value,
+        secret: document.getElementById('adminSecret').value
+    };
+
+    fetch('/api/update_server_config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(serverConfig)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Configurações salvas com sucesso!');
+        } else {
+            showToast('Erro ao salvar configurações: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showToast('Erro ao salvar configurações', 'danger');
+    });
+}
+
+function restartServer() {
+    if (confirm('Tem certeza que deseja reiniciar o servidor? Todos os usuários serão desconectados.')) {
+        showToast('Funcionalidade de reinicialização em desenvolvimento', 'info');
+    }
+}
+
+function backupConfig() {
+    showToast('Funcionalidade de backup em desenvolvimento', 'info');
+}
+
+function viewLogs() {
+    window.location.href = '/logs';
+}
+
+function resetPanelSettings() {
+    if (confirm('Tem certeza que deseja restaurar as configurações padrão do painel?')) {
+        document.getElementById('panelTheme').value = 'auto';
+        document.getElementById('refreshInterval').value = '30';
+        document.getElementById('enableNotifications').checked = true;
+        document.getElementById('enableSounds').checked = false;
+
+        showToast('Configurações do painel restauradas');
+    }
+}
+
+// Aplicar tema selecionado
+document.getElementById('panelTheme').addEventListener('change', function() {
+    const theme = this.value;
+    if (theme === 'auto') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } else {
+        document.documentElement.setAttribute('data-theme', theme);
+    }
+
+    // Salvar preferência
+    fetch('/api/toggle_dark_mode', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({dark_mode: theme === 'dark'})
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block page_title %}Logs de Atividade{% endblock %}
+{% block page_subtitle %}Histórico de ações do sistema{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary" onclick="refreshLogs()">
+    <i class="fas fa-sync-alt me-2"></i>
+    Atualizar
+</button>
+<button class="btn btn-outline-secondary" onclick="exportLogs()">
+    <i class="fas fa-download me-2"></i>
+    Exportar
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Filtros -->
+<div class="card shadow-custom mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-filter me-2 text-primary"></i>
+            Filtros
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="filterAction" class="form-label">Tipo de Ação</label>
+                <select class="form-select" id="filterAction">
+                    <option value="">Todas as ações</option>
+                    <option value="CREATE">Criação</option>
+                    <option value="REMOVE">Remoção</option>
+                    <option value="KICK">Expulsão</option>
+                    <option value="BAN">Banimento</option>
+                    <option value="MUTE">Silenciar</option>
+                    <option value="MESSAGE">Mensagem</option>
+                    <option value="LOGIN">Login</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filterUser" class="form-label">Usuário Afetado</label>
+                <input type="text" class="form-control" id="filterUser" placeholder="Nome do usuário">
+            </div>
+            <div class="col-md-3">
+                <label for="filterDate" class="form-label">Data</label>
+                <input type="date" class="form-control" id="filterDate">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button class="btn btn-primary" onclick="applyFilters()">
+                        <i class="fas fa-search me-2"></i>
+                        Filtrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logs -->
+<div class="card shadow-custom">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list-alt me-2 text-secondary"></i>
+            Registro de Atividades ({{ logs|length }} entradas)
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="logsTable">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Ação</th>
+                            <th>Detalhes</th>
+                            <th>Usuário</th>
+                            <th>Canal</th>
+                            <th>IP Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr class="log-entry"
+                            data-action="{{ log.action }}"
+                            data-user="{{ log.user_affected or '' }}"
+                            data-date="{{ log.timestamp[:10] if log.timestamp else '' }}">
+                            <td>
+                                <div class="fw-semibold">
+                                    {{ log.timestamp.strftime('%d/%m/%Y') if log.timestamp and log.timestamp is not string else log.timestamp[:10] if log.timestamp else 'N/A' }}
+                                </div>
+                                <small class="text-muted">
+                                    {{ log.timestamp.strftime('%H:%M:%S') if log.timestamp and log.timestamp is not string else log.timestamp[11:19] if log.timestamp and log.timestamp|length > 10 else 'N/A' }}
+                                </small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{
+                                    'success' if 'CREATE' in log.action else
+                                    'danger' if 'REMOVE' in log.action or 'DELETE' in log.action or 'KICK' in log.action or 'BAN' in log.action else
+                                    'warning' if 'MUTE' in log.action or 'DEAFEN' in log.action else
+                                    'info' if 'MESSAGE' in log.action else
+                                    'primary' if 'LOGIN' in log.action else
+                                    'secondary'
+                                }}">
+                                    <i class="fas fa-{{
+                                        'plus' if 'CREATE' in log.action else
+                                        'trash' if 'REMOVE' in log.action or 'DELETE' in log.action else
+                                        'user-times' if 'KICK' in log.action or 'BAN' in log.action else
+                                        'microphone-slash' if 'MUTE' in log.action else
+                                        'volume-mute' if 'DEAFEN' in log.action else
+                                        'paper-plane' if 'MESSAGE' in log.action else
+                                        'sign-in-alt' if 'LOGIN' in log.action else
+                                        'cog' if 'CONFIG' in log.action else
+                                        'info-circle'
+                                    }} me-1"></i>
+                                    {{ log.action.replace('_', ' ').title() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if log.details %}
+                                    <span title="{{ log.details }}">
+                                        {{ log.details[:100] }}{% if log.details|length > 100 %}...{% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">Sem detalhes</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.user_affected %}
+                                    <span class="badge bg-light text-dark">{{ log.user_affected }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.channel_affected %}
+                                    <span class="badge bg-light text-dark">{{ log.channel_affected }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.admin_ip %}
+                                    <small class="text-muted">{{ log.admin_ip }}</small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            <nav aria-label="Navegação dos logs" class="mt-3">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <span class="page-link">Anterior</span>
+                    </li>
+                    <li class="page-item active">
+                        <span class="page-link">1</span>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link">Próximo</span>
+                    </li>
+                </ul>
+            </nav>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-list-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum log encontrado</h5>
+                <p class="text-muted">As atividades do sistema aparecerão aqui</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshLogs() {
+    location.reload();
+}
+
+function applyFilters() {
+    const actionFilter = document.getElementById('filterAction').value.toLowerCase();
+    const userFilter = document.getElementById('filterUser').value.toLowerCase();
+    const dateFilter = document.getElementById('filterDate').value;
+
+    const rows = document.querySelectorAll('.log-entry');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const action = row.dataset.action.toLowerCase();
+        const user = row.dataset.user.toLowerCase();
+        const date = row.dataset.date;
+
+        let show = true;
+
+        if (actionFilter && !action.includes(actionFilter)) {
+            show = false;
+        }
+
+        if (userFilter && !user.includes(userFilter)) {
+            show = false;
+        }
+
+        if (dateFilter && date !== dateFilter) {
+            show = false;
+        }
+
+        if (show) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    showToast(`Filtro aplicado: ${visibleCount} entradas encontradas`);
+}
+
+function exportLogs() {
+    // Implementar exportação de logs
+    showToast('Funcionalidade de exportação em desenvolvimento', 'info');
+}
+
+// Limpar filtros
+function clearFilters() {
+    document.getElementById('filterAction').value = '';
+    document.getElementById('filterUser').value = '';
+    document.getElementById('filterDate').value = '';
+
+    document.querySelectorAll('.log-entry').forEach(row => {
+        row.style.display = '';
+    });
+
+    showToast('Filtros limpos');
+}
+
+// Adicionar botão de limpar filtros
+document.addEventListener('DOMContentLoaded', function() {
+    const filterCard = document.querySelector('.card-body .row');
+    if (filterCard) {
+        const clearBtn = document.createElement('div');
+        clearBtn.className = 'col-12 text-end mt-2';
+        clearBtn.innerHTML = '<button class="btn btn-outline-secondary btn-sm" onclick="clearFilters()"><i class="fas fa-times me-1"></i>Limpar Filtros</button>';
+        filterCard.appendChild(clearBtn);
+    }
+});
+</script>
+{% endblock %}
