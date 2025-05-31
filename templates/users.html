@@ -1,0 +1,3186 @@
+{% extends "base.html" %}
+
+{% block page_title %}Gestão de Usuários{% endblock %}
+{% block page_subtitle %}Sistema avançado de controle de usuários, cargos e permissões{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <button class="btn btn-primary" onclick="refreshUsers()">
+        <i class="fas fa-sync-alt me-2"></i>
+        Atualizar
+    </button>
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkActionsModal">
+        <i class="fas fa-tasks me-2"></i>
+        Ações em Massa
+    </button>
+    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#rolesManagementModal">
+        <i class="fas fa-user-cog me-2"></i>
+        Configurar Cargos
+    </button>
+    <button class="btn btn-info" onclick="exportUserData()">
+        <i class="fas fa-download me-2"></i>
+        Exportar
+    </button>
+    <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#userHistoryModal">
+        <i class="fas fa-history me-2"></i>
+        Histórico
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Estatísticas Avançadas dos Usuários -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card stat-card fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ users|length }}</div>
+                        <div class="stat-label">Total Online</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card stat-card success fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ users.values() | selectattr('priority_speaker') | list | length }}</div>
+                        <div class="stat-label">Oradores</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card stat-card warning fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ users.values() | selectattr('mute') | list | length }}</div>
+                        <div class="stat-label">Silenciados</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-microphone-slash"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card stat-card danger fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ banned_users|length if banned_users else 0 }}</div>
+                        <div class="stat-label">Banidos</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card stat-card info fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ users.values() | selectattr('recording') | list | length }}</div>
+                        <div class="stat-label">Gravando</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-record-vinyl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card stat-card secondary fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ users.values() | selectattr('idle_time') | selectattr('idle_time', '>', 300) | list | length }}</div>
+                        <div class="stat-label">Inativos</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Painel de Controle Rápido -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow-custom">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+                    Controle Rápido
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="quick-action-card">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-volume-mute text-warning me-2"></i>
+                                <strong>Silenciar Todos</strong>
+                            </div>
+                            <p class="text-muted small mb-2">Silencia todos os usuários exceto oradores prioritários</p>
+                            <button class="btn btn-warning btn-sm" onclick="muteAllUsers()">
+                                <i class="fas fa-microphone-slash me-1"></i>
+                                Executar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="quick-action-card">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-volume-up text-success me-2"></i>
+                                <strong>Dessilenciar Todos</strong>
+                            </div>
+                            <p class="text-muted small mb-2">Remove o silenciamento de todos os usuários</p>
+                            <button class="btn btn-success btn-sm" onclick="unmuteAllUsers()">
+                                <i class="fas fa-microphone me-1"></i>
+                                Executar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="quick-action-card">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-users-cog text-info me-2"></i>
+                                <strong>Mover por Cargo</strong>
+                            </div>
+                            <p class="text-muted small mb-2">Move usuários para canais baseado em seus cargos</p>
+                            <button class="btn btn-info btn-sm" onclick="organizeByRole()">
+                                <i class="fas fa-sitemap me-1"></i>
+                                Organizar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="quick-action-card">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-shield-alt text-primary me-2"></i>
+                                <strong>Modo Reunião</strong>
+                            </div>
+                            <p class="text-muted small mb-2">Ativa modo reunião (apenas liderança pode falar)</p>
+                            <button class="btn btn-primary btn-sm" onclick="toggleMeetingMode()">
+                                <i class="fas fa-gavel me-1"></i>
+                                Ativar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update 1 -->
+    <div class="col-lg-4">
+    <div class="card shadow-custom">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-chart-pie me-2 text-info"></i>
+                Distribuição de Cargos
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="chart-container" style="position: relative; height: 250px; width: 100%;">
+                <canvas id="rolesChart"></canvas>
+            </div>
+            <div class="mt-3">
+                <div class="role-legend">
+                    <div class="role-legend-item">
+                        <span class="role-color bg-danger"></span>
+                        <span>Pastores</span>
+                        <span class="badge bg-light text-dark">{{ users.values() | selectattr('role', 'equalto', 'pastor') | list | length }}</span>
+                    </div>
+                    <div class="role-legend-item">
+                        <span class="role-color bg-warning"></span>
+                        <span>Líderes</span>
+                        <span class="badge bg-light text-dark">{{ users.values() | selectattr('role', 'equalto', 'lider') | list | length }}</span>
+                    </div>
+                    <div class="role-legend-item">
+                        <span class="role-color bg-info"></span>
+                        <span>Diáconos</span>
+                        <span class="badge bg-light text-dark">{{ users.values() | selectattr('role', 'equalto', 'diacono') | list | length }}</span>
+                    </div>
+                    <div class="role-legend-item">
+                        <span class="role-color bg-success"></span>
+                        <span>Músicos</span>
+                        <span class="badge bg-light text-dark">{{ users.values() | selectattr('role', 'equalto', 'musico') | list | length }}</span>
+                    </div>
+                    <div class="role-legend-item">
+                        <span class="role-color bg-secondary"></span>
+                        <span>Outros</span>
+                        <span class="badge bg-light text-dark">{{ users.values() | rejectattr('role', 'in', ['pastor', 'lider', 'diacono', 'musico']) | list | length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Filtros Avançados -->
+<div class="card shadow-custom mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-filter me-2 text-primary"></i>
+            Filtros Avançados
+        </h5>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary" onclick="saveCurrentFilter()">
+                <i class="fas fa-save me-1"></i>
+                Salvar Filtro
+            </button>
+            <button class="btn btn-outline-secondary" onclick="loadSavedFilters()">
+                <i class="fas fa-folder-open me-1"></i>
+                Carregar
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="filterName" class="form-label">Nome do Usuário</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="filterName" placeholder="Buscar por nome">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label for="filterChannel" class="form-label">Canal</label>
+                <select class="form-select" id="filterChannel">
+                    <option value="">Todos os canais</option>
+                    {% for id, channel in channels.items() %}
+                        <option value="{{ id }}">{{ channel.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filterRole" class="form-label">Cargo</label>
+                <select class="form-select" id="filterRole">
+                    <option value="">Todos os cargos</option>
+                    <option value="pastor">Pastor</option>
+                    <option value="lider">Líder</option>
+                    <option value="diacono">Diácono</option>
+                    <option value="musico">Músico</option>
+                    <option value="tecnico">Técnico</option>
+                    <option value="membro">Membro</option>
+                    <option value="visitante">Visitante</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filterStatus" class="form-label">Status</label>
+                <select class="form-select" id="filterStatus">
+                    <option value="">Todos os status</option>
+                    <option value="online">Online</option>
+                    <option value="muted">Silenciado</option>
+                    <option value="deafened">Ensurdecido</option>
+                    <option value="priority">Orador Prioritário</option>
+                    <option value="idle">Inativo</option>
+                    <option value="recording">Gravando</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filterOS" class="form-label">Sistema</label>
+                <select class="form-select" id="filterOS">
+                    <option value="">Todos</option>
+                    <option value="Windows">Windows</option>
+                    <option value="Android">Android</option>
+                    <option value="Linux">Linux</option>
+                    <option value="iOS">iOS</option>
+                    <option value="macOS">macOS</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label for="filterOnlineTime" class="form-label">Tempo</label>
+                <select class="form-select" id="filterOnlineTime">
+                    <option value="">Todos</option>
+                    <option value="new">< 5min</option>
+                    <option value="short">< 30min</option>
+                    <option value="medium">< 2h</option>
+                    <option value="long">> 2h</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-primary" onclick="applyFilters()">
+                        <i class="fas fa-search me-2"></i>
+                        Aplicar Filtros
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                        <i class="fas fa-times me-2"></i>
+                        Limpar
+                    </button>
+                    <button class="btn btn-outline-info" onclick="invertSelection()">
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        Inverter Seleção
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="selectByRole()">
+                        <i class="fas fa-user-tag me-2"></i>
+                        Selecionar por Cargo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Usuários Online com Visualização Aprimorada -->
+<div class="card shadow-custom mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-users me-2 text-primary"></i>
+            Usuários Conectados (<span id="userCount">{{ users|length }}</span>)
+        </h5>
+        <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-primary" onclick="selectAllUsers()">
+                <i class="fas fa-check-square me-1"></i>
+                Todos
+            </button>
+            <button class="btn btn-outline-secondary" onclick="deselectAllUsers()">
+                <i class="fas fa-square me-1"></i>
+                Nenhum
+            </button>
+            <div class="btn-group">
+                <button class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-eye me-1"></i>
+                    Visualização
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="setViewMode('table')">
+                        <i class="fas fa-table me-2"></i>Tabela
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="setViewMode('cards')">
+                        <i class="fas fa-th-large me-2"></i>Cards
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" onclick="setViewMode('compact')">
+                        <i class="fas fa-list me-2"></i>Compacta
+                    </a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if users %}
+            <!-- Visualização em Tabela (padrão) -->
+            <div id="tableView" class="view-mode">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                </th>
+                                <th>
+                                    <a href="#" onclick="sortTable('name')" class="text-decoration-none">
+                                        Usuário <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="#" onclick="sortTable('role')" class="text-decoration-none">
+                                        Cargo <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th>Canal</th>
+                                <th>Status</th>
+                                <th>
+                                    <a href="#" onclick="sortTable('online_time')" class="text-decoration-none">
+                                        Tempo Online <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th>Sistema</th>
+                                <th>Conexão</th>
+                                <th width="200">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user_id, user in users.items() %}
+                            <tr class="user-row"
+                                data-user-id="{{ user_id }}"
+                                data-name="{{ user.name.lower() }}"
+                                data-channel="{{ user.channel }}"
+                                data-os="{{ user.os or '' }}"
+                                data-role="{{ user.role if user.role else 'membro' }}"
+                                data-online-time="{{ user.online_time or 0 }}"
+                                data-status="{{ 'muted' if user.mute else 'deafened' if user.deaf else 'priority' if user.priority_speaker else 'idle' if user.idle_time and user.idle_time > 300 else 'recording' if user.recording else 'online' }}">
+                                <td>
+                                    <input type="checkbox" class="user-checkbox" value="{{ user_id }}">
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="user-avatar me-3">
+                                            <div class="avatar-circle bg-{{ 'danger' if user.role == 'pastor' else 'warning' if user.role == 'lider' else 'info' if user.role == 'diacono' else 'success' if user.role == 'musico' else 'secondary' if user.role == 'tecnico' else 'primary' }} text-white">
+                                                {{ user.name[:2].upper() }}
+                                            </div>
+                                            {% if user.priority_speaker %}
+                                                <div class="avatar-badge bg-warning">
+                                                    <i class="fas fa-star"></i>
+                                                </div>
+                                            {% endif %}
+                                            {% if user.recording %}
+                                                <div class="avatar-badge bg-danger" style="top: -2px; left: -2px;">
+                                                    <i class="fas fa-circle"></i>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ user.name }}</div>
+                                            {% if user.comment %}
+                                                <small class="text-muted">{{ user.comment }}</small>
+                                            {% endif %}
+                                            {% if user.identity %}
+                                                <div class="mt-1">
+                                                    <span class="badge bg-info">{{ user.identity }}</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="role-container">
+                                        <span class="badge role-badge bg-{{ 'danger' if user.role == 'pastor' else 'warning' if user.role == 'lider' else 'info' if user.role == 'diacono' else 'success' if user.role == 'musico' else 'secondary' if user.role == 'tecnico' else 'primary' if user.role == 'membro' else 'light text-dark' }}">
+                                            <i class="fas fa-{{ 'crown' if user.role == 'pastor' else 'user-tie' if user.role == 'lider' else 'hands-helping' if user.role == 'diacono' else 'music' if user.role == 'musico' else 'cogs' if user.role == 'tecnico' else 'user' if user.role == 'membro' else 'user-clock' }} me-1"></i>
+                                            {{ user.role.title() if user.role else 'Membro' }}
+                                        </span>
+                                        <button class="btn btn-sm btn-outline-secondary ms-1" onclick="changeUserRole({{ user_id }})" title="Alterar cargo">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% for ch_id, channel in channels.items() %}
+                                        {% if ch_id == user.channel %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-comments me-1"></i>
+                                                {{ channel.name }}
+                                            </span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        {% if user.mute %}
+                                            <span class="badge bg-warning" title="Silenciado pelo servidor">
+                                                <i class="fas fa-microphone-slash"></i> Mudo
+                                            </span>
+                                        {% endif %}
+                                        {% if user.deaf %}
+                                            <span class="badge bg-danger" title="Ensurdecido pelo servidor">
+                                                <i class="fas fa-deaf"></i> Surdo
+                                            </span>
+                                        {% endif %}
+                                        {% if user.self_mute %}
+                                            <span class="badge bg-secondary" title="Auto-silenciado">
+                                                <i class="fas fa-microphone-slash"></i> Auto-Mudo
+                                            </span>
+                                        {% endif %}
+                                        {% if user.self_deaf %}
+                                            <span class="badge bg-dark" title="Auto-ensurdecido">
+                                                <i class="fas fa-deaf"></i> Auto-Surdo
+                                            </span>
+                                        {% endif %}
+                                        {% if user.suppress %}
+                                            <span class="badge bg-warning" title="Suprimido">
+                                                <i class="fas fa-volume-mute"></i> Suprimido
+                                            </span>
+                                        {% endif %}
+                                        {% if user.recording %}
+                                            <span class="badge bg-danger" title="Gravando">
+                                                <i class="fas fa-record-vinyl"></i> Gravando
+                                            </span>
+                                        {% endif %}
+                                        {% if user.idle_time and user.idle_time > 300 %}
+                                            <span class="badge bg-secondary" title="Inativo há {{ (user.idle_time // 60) }}min">
+                                                <i class="fas fa-clock"></i> Inativo
+                                            </span>
+                                        {% elif not user.mute and not user.deaf and not user.self_mute and not user.self_deaf %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-circle"></i> Ativo
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-semibold">{{ (user.online_time // 60) if user.online_time else 0 }}min</div>
+                                        {% if user.idle_time and user.idle_time > 0 %}
+                                            <small class="text-warning">
+                                                <i class="fas fa-clock me-1"></i>
+                                                Inativo: {{ (user.idle_time // 60) }}min
+                                            </small>
+                                        {% else %}
+                                            <small class="text-success">
+                                                <i class="fas fa-circle me-1"></i>
+                                                Ativo
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-semibold">
+                                            <i class="fab fa-{{ 'windows' if user.os == 'Windows' else 'android' if user.os == 'Android' else 'linux' if user.os == 'Linux' else 'apple' if user.os in ['iOS', 'macOS'] else 'desktop' }} me-1"></i>
+                                            {{ user.os or 'Desconhecido' }}
+                                        </div>
+                                        <small class="text-muted">{{ user.version or 'N/A' }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-semibold">{{ (user.bytes_per_sec / 1024) | round(1) if user.bytes_per_sec else 0 }} KB/s</div>
+                                        <small class="text-muted">{{ user.address or 'N/A' }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-info" onclick="showUserDetails({{ user_id }})" title="Detalhes">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="toggleMute({{ user_id }}, {{ 'false' if user.mute else 'true' }})" title="{{ 'Desmutar' if user.mute else 'Mutar' }}">
+                                            <i class="fas fa-microphone{{ '-slash' if not user.mute }}"></i>
+                                        </button>
+                                        <button class="btn btn-outline-info" onclick="toggleDeafen({{ user_id }}, {{ 'false' if user.deaf else 'true' }})" title="{{ 'Desensurdecer' if user.deaf else 'Ensurdecer' }}">
+                                            <i class="fas fa-volume{{ '-mute' if not user.deaf else '-up' }}"></i>
+                                        </button>
+                                        <button class="btn btn-outline-primary" onclick="togglePriority({{ user_id }}, {{ 'false' if user.priority_speaker else 'true' }})" title="{{ 'Remover Prioridade' if user.priority_speaker else 'Dar Prioridade' }}">
+                                            <i class="fas fa-star"></i>
+                                        </button>
+                                        <div class="btn-group">
+                                            <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Mais ações">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="moveUser({{ user_id }})">
+                                                    <i class="fas fa-arrows-alt me-2"></i>Mover Canal
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="sendPrivateMessage({{ user_id }})">
+                                                    <i class="fas fa-envelope me-2"></i>Mensagem Privada
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="changeUserRole({{ user_id }})">
+                                                    <i class="fas fa-user-tag me-2"></i>Alterar Cargo
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="viewUserHistory({{ user_id }})">
+                                                    <i class="fas fa-history me-2"></i>Ver Histórico
+                                                </a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-warning" href="#" onclick="kickUser({{ user_id }})">
+                                                    <i class="fas fa-user-times me-2"></i>Expulsar
+                                                </a></li>
+                                                <li><a class="dropdown-item text-danger" href="#" onclick="banUser({{ user_id }})">
+                                                    <i class="fas fa-ban me-2"></i>Banir
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Visualização em Cards -->
+            <div id="cardsView" class="view-mode" style="display: none;">
+                <div class="row g-3">
+                    {% for user_id, user in users.items() %}
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card user-card h-100" data-user-id="{{ user_id }}">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <input type="checkbox" class="user-checkbox me-3" value="{{ user_id }}">
+                                    <div class="user-avatar me-3">
+                                        <div class="avatar-circle bg-{{ 'danger' if user.role == 'pastor' else 'warning' if user.role == 'lider' else 'info' if user.role == 'diacono' else 'success' if user.role == 'musico' else 'secondary' if user.role == 'tecnico' else 'primary' }} text-white">
+                                            {{ user.name[:2].upper() }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ user.name }}</h6>
+                                        <span class="badge bg-{{ 'danger' if user.role == 'pastor' else 'warning' if user.role == 'lider' else 'info' if user.role == 'diacono' else 'success' if user.role == 'musico' else 'secondary' if user.role == 'tecnico' else 'primary' }}">
+                                            {{ user.role.title() if user.role else 'Membro' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-2">
+                                    <small class="text-muted">Canal:</small>
+                                    {% for ch_id, channel in channels.items() %}
+                                        {% if ch_id == user.channel %}
+                                            <span class="badge bg-light text-dark">{{ channel.name }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+
+                                <div class="mb-2">
+                                    <small class="text-muted">Status:</small>
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        {% if user.mute %}
+                                            <span class="badge bg-warning"><i class="fas fa-microphone-slash"></i></span>
+                                        {% endif %}
+                                        {% if user.deaf %}
+                                            <span class="badge bg-danger"><i class="fas fa-deaf"></i></span>
+                                        {% endif %}
+                                        {% if user.priority_speaker %}
+                                            <span class="badge bg-primary"><i class="fas fa-star"></i></span>
+                                        {% endif %}
+                                        {% if not user.mute and not user.deaf %}
+                                            <span class="badge bg-success"><i class="fas fa-circle"></i></span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <small class="text-muted">Online: {{ (user.online_time // 60) if user.online_time else 0 }}min</small>
+                                </div>
+
+                                <div class="btn-group btn-group-sm w-100">
+                                    <button class="btn btn-outline-warning" onclick="toggleMute({{ user_id }}, {{ 'false' if user.mute else 'true' }})">
+                                        <i class="fas fa-microphone{{ '-slash' if not user.mute }}"></i>
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="toggleDeafen({{ user_id }}, {{ 'false' if user.deaf else 'true' }})">
+                                        <i class="fas fa-volume{{ '-mute' if not user.deaf else '-up' }}"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary" onclick="togglePriority({{ user_id }}, {{ 'false' if user.priority_speaker else 'true' }})">
+                                        <i class="fas fa-star"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="showUserDetails({{ user_id }})">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Visualização Compacta -->
+            <div id="compactView" class="view-mode" style="display: none;">
+                <div class="compact-user-list">
+                    {% for user_id, user in users.items() %}
+                    <div class="compact-user-item" data-user-id="{{ user_id }}">
+                        <div class="d-flex align-items-center">
+                            <input type="checkbox" class="user-checkbox me-2" value="{{ user_id }}">
+                            <div class="user-avatar-small me-2">
+                                <div class="avatar-circle-small bg-{{ 'danger' if user.role == 'pastor' else 'warning' if user.role == 'lider' else 'info' if user.role == 'diacono' else 'success' if user.role == 'musico' else 'secondary' if user.role == 'tecnico' else 'primary' }} text-white">
+                                    {{ user.name[:1].upper() }}
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <span class="fw-semibold">{{ user.name }}</span>
+                                <span class="badge bg-light text-dark ms-2">{{ user.role.title() if user.role else 'Membro' }}</span>
+                            </div>
+                            <div class="compact-status">
+                                {% if user.mute %}
+                                    <i class="fas fa-microphone-slash text-warning"></i>
+                                {% endif %}
+                                {% if user.deaf %}
+                                    <i class="fas fa-deaf text-danger"></i>
+                                {% endif %}
+                                {% if user.priority_speaker %}
+                                    <i class="fas fa-star text-primary"></i>
+                                {% endif %}
+                            </div>
+                            <div class="compact-actions ms-2">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-warning btn-sm" onclick="toggleMute({{ user_id }}, {{ 'false' if user.mute else 'true' }})">
+                                        <i class="fas fa-microphone{{ '-slash' if not user.mute }}"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="togglePriority({{ user_id }}, {{ 'false' if user.priority_speaker else 'true' }})">
+                                        <i class="fas fa-star"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum usuário online</h5>
+                <p class="text-muted">Os usuários conectados aparecerão aqui</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Usuários Banidos (melhorado) -->
+{% if banned_users %}
+<div class="card shadow-custom">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-ban me-2 text-danger"></i>
+            Usuários Banidos ({{ banned_users|length }})
+        </h5>
+        <button class="btn btn-outline-danger btn-sm" onclick="clearExpiredBans()">
+            <i class="fas fa-broom me-1"></i>
+            Limpar Expirados
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Usuário</th>
+                        <th>Motivo</th>
+                        <th>Data do Banimento</th>
+                        <th>Expira em</th>
+                        <th>Banido por</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ban in banned_users %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="user-avatar me-3">
+                                    <div class="avatar-circle bg-danger text-white">
+                                        {{ ban.user_name[:2].upper() if ban.user_name else 'XX' }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold">{{ ban.user_name or 'Usuário Desconhecido' }}</div>
+                                    <small class="text-muted">{{ ban.user_hash[:8] if ban.user_hash else 'N/A' }}...</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-danger">{{ ban.reason or 'Sem motivo especificado' }}</span>
+                        </td>
+                        <td>
+                            {% if ban.banned_at %}
+                                <div class="fw-semibold">{{ ban.banned_at.strftime('%d/%m/%Y') if ban.banned_at is not string else ban.banned_at[:10] }}</div>
+                                <small class="text-muted">{{ ban.banned_at.strftime('%H:%M:%S') if ban.banned_at is not string else ban.banned_at[11:19] if ban.banned_at and ban.banned_at|length > 10 else 'N/A' }}</small>
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ban.banned_until %}
+                                <div class="fw-semibold">{{ ban.banned_until.strftime('%d/%m/%Y') if ban.banned_until is not string else ban.banned_until[:10] }}</div>
+                                <small class="text-muted">{{ ban.banned_until.strftime('%H:%M:%S') if ban.banned_until is not string else ban.banned_until[11:19] if ban.banned_until and ban.banned_until|length > 10 else 'N/A' }}</small>
+                            {% else %}
+                                <span class="badge bg-danger">Permanente</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ ban.banned_by or 'Sistema' }}</td>
+                        <td>
+                            {% if ban.banned_until %}
+                                {% set now = moment() %}
+                                {% set ban_until = moment(ban.banned_until) %}
+                                {% if ban_until < now %}
+                                    <span class="badge bg-warning">Expirado</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Ativo</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-danger">Permanente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-success" onclick="unbanUser('{{ ban.user_hash }}')" title="Desbanir">
+                                    <i class="fas fa-user-check me-1"></i>
+                                    Desbanir
+                                </button>
+                                <button class="btn btn-outline-info" onclick="editBan('{{ ban.user_hash }}')" title="Editar banimento">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal de Configuração de Cargos -->
+<div class="modal fade" id="rolesManagementModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-cog me-2"></i>
+                    Configuração Avançada de Cargos
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h6>Hierarquia de Cargos</h6>
+                        <div class="role-hierarchy">
+                            <div class="role-level level-1">
+                                <div class="role-item bg-danger">
+                                    <i class="fas fa-crown me-2"></i>
+                                    <strong>Pastor</strong>
+                                    <span class="role-level-badge">Nível 1</span>
+                                </div>
+                                <div class="role-permissions">
+                                    <span class="badge bg-success">Acesso Total</span>
+                                    <span class="badge bg-info">Gerenciar Cargos</span>
+                                    <span class="badge bg-warning">Banir Usuários</span>
+                                </div>
+                            </div>
+
+                            <div class="role-level level-2">
+                                <div class="role-item bg-warning">
+                                    <i class="fas fa-user-tie me-2"></i>
+                                    <strong>Líder</strong>
+                                    <span class="role-level-badge">Nível 2</span>
+                                </div>
+                                <div class="role-permissions">
+                                    <span class="badge bg-info">Criar Canais</span>
+                                    <span class="badge bg-warning">Mover Usuários</span>
+                                    <span class="badge bg-primary">Falar Prioritário</span>
+                                </div>
+                            </div>
+
+                            <div class="role-level level-3">
+                                <div class="role-item bg-info">
+                                    <i class="fas fa-hands-helping me-2"></i>
+                                    <strong>Diácono</strong>
+                                    <span class="role-level-badge">Nível 3</span>
+                                </div>
+                                <div class="role-permissions">
+                                    <span class="badge bg-primary">Falar Prioritário</span>
+                                    <span class="badge bg-secondary">Assistir Liderança</span>
+                                </div>
+                            </div>
+
+                            <div class="role-level level-4">
+                                <div class="role-item bg-success">
+                                    <i class="fas fa-music me-2"></i>
+                                    <strong>Músico</strong>
+                                    <span class="role-level-badge">Nível 4</span>
+                                </div>
+                                <div class="role-permissions">
+                                    <span class="badge bg-success">Canal de Louvor</span>
+                                    <span class="badge bg-info">Gravação</span>
+                                </div>
+                            </div>
+
+                            <div class="role-level level-4">
+                                <div class="role-item bg-secondary">
+                                    <i class="fas fa-cogs me-2"></i>
+                                    <strong>Técnico</strong>
+                                    <span class="role-level-badge">Nível 4</span>
+                                </div>
+                                <div class="role-permissions">
+                                    <span class="badge bg-secondary">Som e Mídia</span>
+                                    <span class="badge bg-info">Configurações</span>
+                                </div>
+                            </div>
+
+                            <div class="role-level level-5">
+                                <div class="role-item bg-primary">
+                                    <i class="fas fa-user me-2"></i>
+                                    <strong>Membro</strong>
+                                    <span class="role-level-badge">Nível 5</span>
+                                </div>
+                                <div class="role-permissions">
+                                    <span class="badge bg-primary">Participação</span>
+                                </div>
+                            </div>
+
+                            <div class="role-level level-6">
+                                <div class="role-item bg-light text-dark">
+                                    <i class="fas fa-user-clock me-2"></i>
+                                    <strong>Visitante</strong>
+                                    <span class="role-level-badge">Nível 6</span>
+                                </div>
+                                <div class="role-permissions">
+                                    <span class="badge bg-light text-dark">Acesso Limitado</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <h6>Configurações de Permissões</h6>
+                        <div class="permissions-config">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Permissão</th>
+                                            <th>Pastor</th>
+                                            <th>Líder</th>
+                                            <th>Diácono</th>
+                                            <th>Músico</th>
+                                            <th>Técnico</th>
+                                            <th>Membro</th>
+                                            <th>Visitante</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Falar prioritário</td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Criar canais</td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Mover usuários</td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Silenciar outros</td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Banir usuários</td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Gravar áudio</td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-check text-success"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                            <td><i class="fas fa-times text-danger"></i></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <h6 class="mt-4">Configurações Automáticas</h6>
+                        <div class="auto-config">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoAssignRole" checked>
+                                <label class="form-check-label" for="autoAssignRole">
+                                    Atribuir cargo automaticamente baseado no nome
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoMoveByRole" checked>
+                                <label class="form-check-label" for="autoMoveByRole">
+                                    Mover usuários para canais baseado no cargo
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoPriorityByRole" checked>
+                                <label class="form-check-label" for="autoPriorityByRole">
+                                    Dar prioridade automática para liderança
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-primary" onclick="saveRoleConfiguration()">
+                    <i class="fas fa-save me-2"></i>
+                    Salvar Configurações
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Ações em Massa (melhorado) -->
+<div class="modal fade" id="bulkActionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-tasks me-2"></i>
+                    Ações em Massa
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <span id="selectedUsersCount">0</span> usuário(s) selecionado(s). Escolha uma ação para aplicar a todos.
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Categoria de Ação</label>
+                            <select class="form-select" id="bulkActionCategory">
+                                <option value="">Selecione uma categoria</option>
+                                <option value="audio">Controle de Áudio</option>
+                                <option value="movement">Movimentação</option>
+                                <option value="role">Gerenciamento de Cargos</option>
+                                <option value="moderation">Moderação</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Ação Específica</label>
+                            <select class="form-select" id="bulkAction" disabled>
+                                <option value="">Selecione uma ação</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3" id="moveChannelDiv" style="display: none;">
+                    <label class="form-label">Canal de Destino</label>
+                    <select class="form-select" id="bulkMoveChannel">
+                        {% for id, channel in channels.items() %}
+                            <option value="{{ id }}">{{ channel.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3" id="roleDiv" style="display: none;">
+                    <label class="form-label">Novo Cargo</label>
+                    <select class="form-select" id="bulkRole">
+                        <option value="pastor">Pastor</option>
+                        <option value="lider">Líder</option>
+                        <option value="diacono">Diácono</option>
+                        <option value="musico">Músico</option>
+                        <option value="tecnico">Técnico</option>
+                        <option value="membro">Membro</option>
+                        <option value="visitante">Visitante</option>
+                    </select>
+                </div>
+
+                <div class="mb-3" id="reasonDiv" style="display: none;">
+                    <label class="form-label">Motivo</label>
+                    <textarea class="form-control" id="bulkReason" rows="3" placeholder="Digite o motivo da ação"></textarea>
+                </div>
+
+                <div class="mb-3" id="banDurationDiv" style="display: none;">
+                    <label class="form-label">Duração do Banimento</label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="number" class="form-control" id="bulkBanDuration" value="0" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <select class="form-select" id="bulkBanUnit">
+                                <option value="hours">Horas</option>
+                                <option value="days">Dias</option>
+                                <option value="weeks">Semanas</option>
+                                <option value="permanent">Permanente</option>
+                            </select>
+                        </div>
+                    </div>
+                    <small class="text-muted">0 = Banimento permanente</small>
+                </div>
+
+                <div class="mb-3" id="scheduleDiv" style="display: none;">
+                    <label class="form-label">Agendar Ação</label>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="datetime-local" class="form-control" id="scheduleDateTime">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="scheduleEnabled">
+                                <label class="form-check-label" for="scheduleEnabled">
+                                    Executar agendado
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3" id="actionPreview" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Prévia da Ação:</strong>
+                    <span id="actionPreviewText"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="executeBulkAction()" id="executeBulkBtn" disabled>
+                    <i class="fas fa-play me-2"></i>
+                    Executar Ação
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Histórico de Usuário -->
+<div class="modal fade" id="userHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-history me-2"></i>
+                    Histórico de Atividades
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="historySearch" placeholder="Buscar por usuário ou ação">
+                        <button class="btn btn-outline-secondary" onclick="searchHistory()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="historyContent">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="mt-2">Carregando histórico...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalhes do Usuário (melhorado) -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user me-2"></i>
+                    Detalhes do Usuário
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userDetailsContent">
+                <!-- Conteúdo será carregado dinamicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Alteração de Cargo (melhorado) -->
+<div class="modal fade" id="changeRoleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-tag me-2"></i>
+                    Alterar Cargo do Usuário
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Usuário</label>
+                            <input type="text" class="form-control" id="changeRoleUserName" readonly>
+                            <input type="hidden" id="changeRoleUserId">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cargo Atual</label>
+                            <input type="text" class="form-control" id="changeRoleCurrentRole" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Novo Cargo</label>
+                            <select class="form-select" id="changeRoleSelect">
+                                <option value="pastor">Pastor</option>
+                                <option value="lider">Líder</option>
+                                <option value="diacono">Diácono</option>
+                                <option value="musico">Músico</option>
+                                <option value="tecnico">Técnico</option>
+                                <option value="membro">Membro</option>
+                                <option value="visitante">Visitante</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Permissões do Novo Cargo</label>
+                            <div id="rolePermissionsPreview" class="border rounded p-3 bg-light">
+                                <!-- Será preenchido dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Motivo da Alteração</label>
+                    <textarea class="form-control" id="changeRoleReason" rows="3" placeholder="Digite o motivo da alteração de cargo"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="notifyUserRole">
+                        <label class="form-check-label" for="notifyUserRole">
+                            Notificar usuário sobre a alteração
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="confirmRoleChange()">
+                    <i class="fas fa-save me-2"></i>
+                    Alterar Cargo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Variáveis globais
+let selectedUsers = [];
+let currentViewMode = 'table';
+let sortColumn = '';
+let sortDirection = 'asc';
+let meetingModeActive = false;
+
+// Dados das ações em massa por categoria
+const bulkActionsByCategory = {
+    audio: [
+        {value: 'mute', text: 'Silenciar Usuários'},
+        {value: 'unmute', text: 'Dessilenciar Usuários'},
+        {value: 'deafen', text: 'Ensurdecer Usuários'},
+        {value: 'undeafen', text: 'Desensurdecer Usuários'},
+        {value: 'priority', text: 'Dar Prioridade'},
+        {value: 'unpriority', text: 'Remover Prioridade'}
+    ],
+    movement: [
+        {value: 'move', text: 'Mover para Canal'},
+        {value: 'organize_by_role', text: 'Organizar por Cargo'},
+        {value: 'gather_leadership', text: 'Reunir Liderança'}
+    ],
+    role: [
+        {value: 'role', text: 'Alterar Cargo'},
+        {value: 'auto_assign_role', text: 'Atribuir Cargo Automático'},
+        {value: 'promote', text: 'Promover Cargo'},
+        {value: 'demote', text: 'Rebaixar Cargo'}
+    ],
+    moderation: [
+        {value: 'kick', text: 'Expulsar Usuários'},
+        {value: 'ban', text: 'Banir Usuários'},
+        {value: 'warn', text: 'Advertir Usuários'},
+        {value: 'timeout', text: 'Timeout Temporário'}
+    ]
+};
+
+// Permissões por cargo
+const rolePermissions = {
+    pastor: ['Acesso Total', 'Gerenciar Cargos', 'Banir Usuários', 'Criar Canais', 'Falar Prioritário'],
+    lider: ['Criar Canais', 'Mover Usuários', 'Falar Prioritário', 'Gerenciar Ministério'],
+    diacono: ['Falar Prioritário', 'Assistir Liderança', 'Apoio Pastoral'],
+    musico: ['Canal de Louvor', 'Gravação', 'Ministério Musical'],
+    tecnico: ['Som e Mídia', 'Configurações Técnicas', 'Suporte'],
+    membro: ['Participação', 'Acesso Básico'],
+    visitante: ['Acesso Limitado', 'Apenas Ouvir']
+};
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    initializeEventListeners();
+    initializeCharts();
+    updateSelectedUsersCount();
+});
+
+function initializeEventListeners() {
+    // Event listeners para checkboxes
+    document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedUsers);
+    });
+
+    // Event listener para categoria de ações em massa
+    document.getElementById('bulkActionCategory').addEventListener('change', function() {
+        updateBulkActions(this.value);
+    });
+
+    // Event listener para ação específica
+    document.getElementById('bulkAction').addEventListener('change', function() {
+        updateBulkActionFields(this.value);
+        updateActionPreview();
+    });
+
+    // Event listener para cargo no modal de alteração
+    document.getElementById('changeRoleSelect').addEventListener('change', function() {
+        updateRolePermissionsPreview(this.value);
+    });
+
+    // Event listeners para filtros
+    ['filterName', 'filterChannel', 'filterRole', 'filterStatus', 'filterOS', 'filterOnlineTime'].forEach(id => {
+        document.getElementById(id).addEventListener('input', debounce(applyFilters, 300));
+    });
+}
+
+<!-- Update 2 -->
+function initializeCharts() {
+    // Gráfico de distribuição de cargos
+    const ctx = document.getElementById('rolesChart');
+
+    if (!ctx) {
+        console.error('Elemento do gráfico não encontrado');
+        return;
+    }
+
+    try {
+        const pastorCount = {{ users.values() | selectattr('role', 'equalto', 'pastor') | list | length }};
+        const liderCount = {{ users.values() | selectattr('role', 'equalto', 'lider') | list | length }};
+        const diaconoCount = {{ users.values() | selectattr('role', 'equalto', 'diacono') | list | length }};
+        const musicoCount = {{ users.values() | selectattr('role', 'equalto', 'musico') | list | length }};
+        const outrosCount = {{ users.values() | rejectattr('role', 'in', ['pastor', 'lider', 'diacono', 'musico']) | list | length }};
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pastores', 'Líderes', 'Diáconos', 'Músicos', 'Outros'],
+                datasets: [{
+                    data: [pastorCount, liderCount, diaconoCount, musicoCount, outrosCount],
+                    backgroundColor: [
+                        '#dc2626', // vermelho para pastores
+                        '#d97706', // laranja para líderes
+                        '#0ea5e9', // azul para diáconos
+                        '#059669', // verde para músicos
+                        '#6b7280'  // cinza para outros
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                layout: {
+                    padding: 10
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao inicializar o gráfico:', error);
+        // Fallback: esconder o container do gráfico se houver erro
+        const chartContainer = document.querySelector('.chart-container');
+        if (chartContainer) {
+            chartContainer.innerHTML = '<div class="text-center text-muted"><i class="fas fa-chart-pie fa-2x mb-2"></i><br>Gráfico indisponível</div>';
+        }
+    }
+}
+
+// Funções de filtros
+function applyFilters() {
+    const nameFilter = document.getElementById('filterName').value.toLowerCase();
+    const channelFilter = document.getElementById('filterChannel').value;
+    const roleFilter = document.getElementById('filterRole').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    const osFilter = document.getElementById('filterOS').value;
+    const timeFilter = document.getElementById('filterOnlineTime').value;
+
+    const rows = document.querySelectorAll('.user-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const name = row.dataset.name;
+        const channel = row.dataset.channel;
+        const role = row.dataset.role;
+        const status = row.dataset.status;
+        const os = row.dataset.os;
+        const onlineTime = parseInt(row.dataset.onlineTime) || 0;
+
+        let show = true;
+
+        if (nameFilter && !name.includes(nameFilter)) show = false;
+        if (channelFilter && channel !== channelFilter) show = false;
+        if (roleFilter && role !== roleFilter) show = false;
+        if (statusFilter && status !== statusFilter) show = false;
+        if (osFilter && os !== osFilter) show = false;
+
+        if (timeFilter) {
+            const minutes = onlineTime / 60;
+            switch(timeFilter) {
+                case 'new': if (minutes >= 5) show = false; break;
+                case 'short': if (minutes >= 30) show = false; break;
+                case 'medium': if (minutes >= 120) show = false; break;
+                case 'long': if (minutes < 120) show = false; break;
+            }
+        }
+
+        if (show) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Aplicar filtros também nas outras visualizações
+    document.querySelectorAll('.user-card, .compact-user-item').forEach(item => {
+        const userId = item.dataset.userId;
+        const userRow = document.querySelector(`[data-user-id="${userId}"]`);
+        if (userRow) {
+            item.style.display = userRow.style.display;
+        }
+    });
+
+    document.getElementById('userCount').textContent = visibleCount;
+    showToast(`Filtro aplicado: ${visibleCount} usuários encontrados`);
+}
+
+function clearFilters() {
+    ['filterName', 'filterChannel', 'filterRole', 'filterStatus', 'filterOS', 'filterOnlineTime'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+
+    document.querySelectorAll('.user-row, .user-card, .compact-user-item').forEach(item => {
+        item.style.display = '';
+    });
+
+    document.getElementById('userCount').textContent = {{ users|length }};
+    showToast('Filtros limpos');
+}
+
+// Funções de seleção
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.user-checkbox:not([style*="display: none"])');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+
+    updateSelectedUsers();
+}
+
+function selectAllUsers() {
+    document.querySelectorAll('.user-checkbox:not([style*="display: none"])').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    document.getElementById('selectAll').checked = true;
+    updateSelectedUsers();
+}
+
+function deselectAllUsers() {
+    document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    document.getElementById('selectAll').checked = false;
+    updateSelectedUsers();
+}
+
+function invertSelection() {
+    document.querySelectorAll('.user-checkbox:not([style*="display: none"])').forEach(checkbox => {
+        checkbox.checked = !checkbox.checked;
+    });
+    updateSelectedUsers();
+}
+
+function selectByRole() {
+    const role = prompt('Digite o cargo para selecionar (pastor, lider, diacono, musico, tecnico, membro, visitante):');
+    if (role) {
+        document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+            const userRow = document.querySelector(`[data-user-id="${checkbox.value}"]`);
+            if (userRow && userRow.dataset.role === role.toLowerCase()) {
+                checkbox.checked = true;
+            }
+        });
+        updateSelectedUsers();
+        showToast(`Usuários com cargo "${role}" selecionados`);
+    }
+}
+
+function updateSelectedUsers() {
+    selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => cb.value);
+    updateSelectedUsersCount();
+
+    const allCheckboxes = document.querySelectorAll('.user-checkbox:not([style*="display: none"])');
+    const checkedCheckboxes = document.querySelectorAll('.user-checkbox:checked:not([style*="display: none"])');
+    const selectAll = document.getElementById('selectAll');
+
+    if (checkedCheckboxes.length === 0) {
+        selectAll.indeterminate = false;
+        selectAll.checked = false;
+    } else if (checkedCheckboxes.length === allCheckboxes.length) {
+        selectAll.indeterminate = false;
+        selectAll.checked = true;
+    } else {
+        selectAll.indeterminate = true;
+    }
+}
+
+function updateSelectedUsersCount() {
+    const count = selectedUsers.length;
+    const countElement = document.getElementById('selectedUsersCount');
+    if (countElement) {
+        countElement.textContent = count;
+    }
+
+    const executeBulkBtn = document.getElementById('executeBulkBtn');
+    if (executeBulkBtn) {
+        executeBulkBtn.disabled = count === 0;
+    }
+}
+
+// Funções de visualização
+function setViewMode(mode) {
+    currentViewMode = mode;
+
+    document.querySelectorAll('.view-mode').forEach(view => {
+        view.style.display = 'none';
+    });
+
+    document.getElementById(mode + 'View').style.display = 'block';
+
+    showToast(`Visualização alterada para ${mode === 'table' ? 'tabela' : mode === 'cards' ? 'cards' : 'compacta'}`);
+}
+
+// Funções de ordenação
+function sortTable(column) {
+    if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+    }
+
+    const tbody = document.querySelector('#usersTable tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    rows.sort((a, b) => {
+        let aVal, bVal;
+
+        switch(column) {
+            case 'name':
+                aVal = a.dataset.name;
+                bVal = b.dataset.name;
+                break;
+            case 'role':
+                aVal = a.dataset.role;
+                bVal = b.dataset.role;
+                break;
+            case 'online_time':
+                aVal = parseInt(a.dataset.onlineTime) || 0;
+                bVal = parseInt(b.dataset.onlineTime) || 0;
+                break;
+            default:
+                return 0;
+        }
+
+        if (typeof aVal === 'string') {
+            return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        } else {
+            return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+    });
+
+    rows.forEach(row => tbody.appendChild(row));
+
+    // Atualizar ícones de ordenação
+    document.querySelectorAll('th .fas.fa-sort').forEach(icon => {
+        icon.className = 'fas fa-sort';
+    });
+
+    const currentHeader = document.querySelector(`th a[onclick="sortTable('${column}')"] .fas`);
+    if (currentHeader) {
+        currentHeader.className = `fas fa-sort-${sortDirection === 'asc' ? 'up' : 'down'}`;
+    }
+}
+
+// Funções de ações em massa
+function updateBulkActions(category) {
+    const actionSelect = document.getElementById('bulkAction');
+    actionSelect.innerHTML = '<option value="">Selecione uma ação</option>';
+
+    if (category && bulkActionsByCategory[category]) {
+        bulkActionsByCategory[category].forEach(action => {
+            const option = document.createElement('option');
+            option.value = action.value;
+            option.textContent = action.text;
+            actionSelect.appendChild(option);
+        });
+        actionSelect.disabled = false;
+    } else {
+        actionSelect.disabled = true;
+    }
+
+    // Limpar campos específicos
+    updateBulkActionFields('');
+}
+
+function updateBulkActionFields(action) {
+    // Ocultar todos os campos específicos
+    ['moveChannelDiv', 'roleDiv', 'reasonDiv', 'banDurationDiv', 'scheduleDiv'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+    });
+
+    // Mostrar campos baseado na ação
+    switch(action) {
+        case 'move':
+        case 'organize_by_role':
+        case 'gather_leadership':
+            document.getElementById('moveChannelDiv').style.display = 'block';
+            break;
+        case 'role':
+        case 'promote':
+        case 'demote':
+            document.getElementById('roleDiv').style.display = 'block';
+            document.getElementById('reasonDiv').style.display = 'block';
+            break;
+        case 'kick':
+        case 'warn':
+            document.getElementById('reasonDiv').style.display = 'block';
+            break;
+        case 'ban':
+            document.getElementById('reasonDiv').style.display = 'block';
+            document.getElementById('banDurationDiv').style.display = 'block';
+            break;
+    }
+}
+
+function updateActionPreview() {
+    const action = document.getElementById('bulkAction').value;
+    const count = selectedUsers.length;
+    const preview = document.getElementById('actionPreview');
+    const previewText = document.getElementById('actionPreviewText');
+
+    if (action && count > 0) {
+        let text = '';
+        switch(action) {
+            case 'mute':
+                text = `Silenciar ${count} usuário(s)`;
+                break;
+            case 'unmute':
+                text = `Dessilenciar ${count} usuário(s)`;
+                break;
+            case 'move':
+                const channel = document.getElementById('bulkMoveChannel').selectedOptions[0]?.text || 'canal selecionado';
+                text = `Mover ${count} usuário(s) para ${channel}`;
+                break;
+            case 'role':
+                const role = document.getElementById('bulkRole').selectedOptions[0]?.text || 'cargo selecionado';
+                text = `Alterar cargo de ${count} usuário(s) para ${role}`;
+                break;
+            case 'kick':
+                text = `Expulsar ${count} usuário(s)`;
+                break;
+            case 'ban':
+                text = `Banir ${count} usuário(s)`;
+                break;
+            default:
+                text = `Executar "${action}" em ${count} usuário(s)`;
+        }
+
+        previewText.textContent = text;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+function executeBulkAction() {
+    if (selectedUsers.length === 0) {
+        showToast('Selecione pelo menos um usuário', 'warning');
+        return;
+    }
+
+    const action = document.getElementById('bulkAction').value;
+    if (!action) {
+        showToast('Selecione uma ação', 'warning');
+        return;
+    }
+
+    const reason = document.getElementById('bulkReason').value;
+    const channelId = document.getElementById('bulkMoveChannel').value;
+    const role = document.getElementById('bulkRole').value;
+    const banDuration = document.getElementById('bulkBanDuration').value;
+    const banUnit = document.getElementById('bulkBanUnit').value;
+
+    // Validações específicas
+    if (['kick', 'ban', 'role'].includes(action) && !reason.trim()) {
+        showToast('Motivo é obrigatório para esta ação', 'warning');
+        return;
+    }
+
+    if (confirm(`Tem certeza que deseja executar esta ação em ${selectedUsers.length} usuário(s)?`)) {
+        let finalBanDuration = 0;
+        if (action === 'ban' && banUnit !== 'permanent') {
+            const duration = parseInt(banDuration) || 0;
+            switch(banUnit) {
+                case 'hours': finalBanDuration = duration; break;
+                case 'days': finalBanDuration = duration * 24; break;
+                case 'weeks': finalBanDuration = duration * 24 * 7; break;
+            }
+        }
+
+        const payload = {
+            action: action,
+            user_ids: selectedUsers.map(id => parseInt(id)),
+            reason: reason,
+            channel_id: channelId ? parseInt(channelId) : null,
+            role: role,
+            ban_duration: finalBanDuration
+        };
+
+        const submitBtn = document.getElementById('executeBulkBtn');
+        showLoading(submitBtn);
+
+        fetch('/api/bulk_user_action', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(`Ação "${action}" executada com sucesso em ${data.affected_users || selectedUsers.length} usuário(s)`, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('bulkActionsModal')).hide();
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showToast('Erro: ' + (data.error || 'Erro desconhecido'), 'danger');
+            }
+        })
+        .catch(error => {
+            showToast('Erro ao executar ação em massa', 'danger');
+        })
+        .finally(() => {
+            hideLoading(submitBtn);
+        });
+    }
+}
+
+// Funções de controle rápido
+function muteAllUsers() {
+    if (confirm('Tem certeza que deseja silenciar todos os usuários (exceto oradores prioritários)?')) {
+        const allUsers = Array.from(document.querySelectorAll('.user-checkbox')).map(cb => cb.value);
+
+        fetch('/api/bulk_user_action', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                action: 'mute_except_priority',
+                user_ids: allUsers.map(id => parseInt(id)),
+                reason: 'Silenciamento geral - manter apenas oradores prioritários'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Todos os usuários foram silenciados (exceto oradores prioritários)', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('Erro: ' + (data.error || 'Erro desconhecido'), 'danger');
+            }
+        });
+    }
+}
+
+function unmuteAllUsers() {
+    if (confirm('Tem certeza que deseja dessilenciar todos os usuários?')) {
+        const allUsers = Array.from(document.querySelectorAll('.user-checkbox')).map(cb => cb.value);
+
+        fetch('/api/bulk_user_action', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                action: 'unmute',
+                user_ids: allUsers.map(id => parseInt(id)),
+                reason: 'Dessilenciamento geral'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Todos os usuários foram dessilenciados', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('Erro: ' + (data.error || 'Erro desconhecido'), 'danger');
+            }
+        });
+    }
+}
+
+function organizeByRole() {
+    if (confirm('Tem certeza que deseja organizar os usuários por cargo nos canais apropriados?')) {
+        fetch('/api/organize_users_by_role', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Usuários organizados por cargo com sucesso!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('Erro: ' + (data.error || 'Erro desconhecido'), 'danger');
+            }
+        });
+    }
+}
+
+function toggleMeetingMode() {
+    meetingModeActive = !meetingModeActive;
+    const btn = event.target.closest('button');
+
+    if (meetingModeActive) {
+        btn.innerHTML = '<i class="fas fa-gavel me-1"></i>Desativar';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-danger');
+        showToast('Modo reunião ativado - apenas liderança pode falar', 'info');
+    } else {
+        btn.innerHTML = '<i class="fas fa-gavel me-1"></i>Ativar';
+        btn.classList.remove('btn-danger');
+        btn.classList.add('btn-primary');
+        showToast('Modo reunião desativado', 'info');
+    }
+}
+
+// Funções de gerenciamento de cargos
+function changeUserRole(userId) {
+    const userRow = document.querySelector(`[data-user-id="${userId}"]`);
+    const userName = userRow.querySelector('.fw-semibold').textContent;
+    const currentRole = userRow.dataset.role;
+
+    document.getElementById('changeRoleUserName').value = userName;
+    document.getElementById('changeRoleUserId').value = userId;
+    document.getElementById('changeRoleCurrentRole').value = currentRole.charAt(0).toUpperCase() + currentRole.slice(1);
+    document.getElementById('changeRoleSelect').value = currentRole;
+
+    updateRolePermissionsPreview(currentRole);
+
+    const modal = new bootstrap.Modal(document.getElementById('changeRoleModal'));
+    modal.show();
+}
+
+function updateRolePermissionsPreview(role) {
+    const preview = document.getElementById('rolePermissionsPreview');
+    const permissions = rolePermissions[role] || [];
+
+    preview.innerHTML = permissions.map(permission =>
+        `<span class="badge bg-primary me-1 mb-1">${permission}</span>`
+    ).join('');
+}
+
+function confirmRoleChange() {
+    const userId = document.getElementById('changeRoleUserId').value;
+    const newRole = document.getElementById('changeRoleSelect').value;
+    const reason = document.getElementById('changeRoleReason').value;
+    const notifyUser = document.getElementById('notifyUserRole').checked;
+
+    if (!reason.trim()) {
+        showToast('Por favor, informe o motivo da alteração', 'warning');
+        return;
+    }
+
+    const submitBtn = event.target;
+    showLoading(submitBtn);
+
+    fetch('/api/change_user_role', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            user_id: parseInt(userId),
+            new_role: newRole,
+            reason: reason,
+            notify_user: notifyUser
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Cargo alterado para ${newRole} com sucesso!`);
+            bootstrap.Modal.getInstance(document.getElementById('changeRoleModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast('Erro: ' + (data.error || 'Erro desconhecido'), 'danger');
+        }
+    })
+    .catch(error => {
+        showToast('Erro ao alterar cargo', 'danger');
+    })
+    .finally(() => {
+        hideLoading(submitBtn);
+    });
+}
+
+function saveRoleConfiguration() {
+    const config = {
+        auto_assign_role: document.getElementById('autoAssignRole').checked,
+        auto_move_by_role: document.getElementById('autoMoveByRole').checked,
+        auto_priority_by_role: document.getElementById('autoPriorityByRole').checked
+    };
+
+    fetch('/api/save_role_configuration', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Configurações de cargos salvas com sucesso!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('rolesManagementModal')).hide();
+        } else {
+            showToast('Erro: ' + (data.error || 'Erro desconhecido'), 'danger');
+        }
+    });
+}
+
+// Funções de histórico
+function viewUserHistory(userId) {
+    const modal = new bootstrap.Modal(document.getElementById('userHistoryModal'));
+    modal.show();
+
+    loadUserHistory(userId);
+}
+
+function loadUserHistory(userId = null) {
+    const content = document.getElementById('historyContent');
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-2">Carregando histórico...</p>
+        </div>
+    `;
+
+    // Simular carregamento de histórico
+    setTimeout(() => {
+        content.innerHTML = `
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-success"></div>
+                    <div class="timeline-content">
+                        <h6>Cargo alterado para Líder</h6>
+                        <p class="text-muted mb-1">Promovido devido ao excelente trabalho no ministério</p>
+                        <small class="text-muted">Hoje às 14:30 - Admin</small>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-info"></div>
+                    <div class="timeline-content">
+                        <h6>Movido para canal Liderança</h6>
+                        <p class="text-muted mb-1">Participação em reunião de líderes</p>
+                        <small class="text-muted">Ontem às 19:15 - Sistema</small>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker bg-warning"></div>
+                    <div class="timeline-content">
+                        <h6>Prioridade de fala concedida</h6>
+                        <p class="text-muted mb-1">Para apresentação do ministério</p>
+                        <small class="text-muted">2 dias atrás às 20:00 - Pastor João</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+function searchHistory() {
+    const searchTerm = document.getElementById('historySearch').value;
+    showToast(`Buscando por: ${searchTerm}`, 'info');
+    loadUserHistory();
+}
+
+// Funções de detalhes do usuário
+function showUserDetails(userId) {
+    const modal = new bootstrap.Modal(document.getElementById('userDetailsModal'));
+    document.getElementById('userDetailsContent').innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-2">Carregando detalhes do usuário...</p>
+        </div>
+    `;
+    modal.show();
+
+    // Simular carregamento de dados
+    setTimeout(() => {
+        const userRow = document.querySelector(`[data-user-id="${userId}"]`);
+        const userName = userRow.querySelector('.fw-semibold').textContent;
+        const userRole = userRow.dataset.role;
+
+        document.getElementById('userDetailsContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    <div class="user-avatar-large mb-3">
+                        <div class="avatar-circle-large bg-primary text-white">
+                            ${userName.substring(0, 2).toUpperCase()}
+                        </div>
+                    </div>
+                    <h5>${userName}</h5>
+                    <span class="badge bg-primary">${userRole.charAt(0).toUpperCase() + userRole.slice(1)}</span>
+
+                    <div class="mt-3">
+                        <div class="btn-group-vertical w-100">
+                            <button class="btn btn-outline-primary btn-sm" onclick="sendPrivateMessage(${userId})">
+                                <i class="fas fa-envelope me-2"></i>Mensagem Privada
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="viewUserHistory(${userId})">
+                                <i class="fas fa-history me-2"></i>Ver Histórico
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="changeUserRole(${userId})">
+                                <i class="fas fa-user-tag me-2"></i>Alterar Cargo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informações de Conexão</h6>
+                            <table class="table table-sm">
+                                <tr><td>IP:</td><td>192.168.1.100</td></tr>
+                                <tr><td>Sistema:</td><td>Windows 11</td></tr>
+                                <tr><td>Versão:</td><td>1.4.0</td></tr>
+                                <tr><td>Tempo Online:</td><td>45 minutos</td></tr>
+                                <tr><td>Largura de Banda:</td><td>128 KB/s</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Status Atual</h6>
+                            <div class="d-flex gap-2 flex-wrap mb-3">
+                                <span class="badge bg-success"><i class="fas fa-circle"></i> Online</span>
+                                <span class="badge bg-info"><i class="fas fa-microphone"></i> Ativo</span>
+                                <span class="badge bg-primary"><i class="fas fa-star"></i> Prioritário</span>
+                            </div>
+
+                            <h6>Permissões</h6>
+                            <div class="d-flex gap-2 flex-wrap">
+                                ${rolePermissions[userRole]?.map(permission =>
+                                    `<span class="badge bg-light text-dark">${permission}</span>`
+                                ).join('') || '<span class="text-muted">Nenhuma permissão especial</span>'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="mt-3">Atividade Recente</h6>
+                    <div class="timeline-compact">
+                        <div class="timeline-item-compact">
+                            <i class="fas fa-sign-in-alt text-success"></i>
+                            <span>Conectou-se ao servidor</span>
+                            <small class="text-muted">45 min atrás</small>
+                        </div>
+                        <div class="timeline-item-compact">
+                            <i class="fas fa-comments text-info"></i>
+                            <span>Entrou no canal Lobby Principal</span>
+                            <small class="text-muted">44 min atrás</small>
+                        </div>
+                        <div class="timeline-item-compact">
+                            <i class="fas fa-star text-warning"></i>
+                            <span>Recebeu prioridade de fala</span>
+                            <small class="text-muted">30 min atrás</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+// Funções de usuários banidos
+function clearExpiredBans() {
+    if (confirm('Tem certeza que deseja remover todos os banimentos expirados?')) {
+        fetch('/api/clear_expired_bans', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(`${data.cleared_count || 0} banimentos expirados removidos`, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showToast('Erro: ' + (data.error || 'Erro desconhecido'), 'danger');
+            }
+        });
+    }
+}
+
+function editBan(userHash) {
+    showToast('Funcionalidade de edição de banimento em desenvolvimento', 'info');
+}
+
+// Funções de filtros salvos
+function saveCurrentFilter() {
+    const filterName = prompt('Digite um nome para este filtro:');
+    if (filterName) {
+        const filters = {
+            name: document.getElementById('filterName').value,
+            channel: document.getElementById('filterChannel').value,
+            role: document.getElementById('filterRole').value,
+            status: document.getElementById('filterStatus').value,
+            os: document.getElementById('filterOS').value,
+            time: document.getElementById('filterOnlineTime').value
+        };
+
+        localStorage.setItem(`mumble_filter_${filterName}`, JSON.stringify(filters));
+        showToast(`Filtro "${filterName}" salvo com sucesso!`, 'success');
+    }
+}
+
+function loadSavedFilters() {
+    const savedFilters = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('mumble_filter_')) {
+            savedFilters.push(key.replace('mumble_filter_', ''));
+        }
+    }
+
+    if (savedFilters.length === 0) {
+        showToast('Nenhum filtro salvo encontrado', 'info');
+        return;
+    }
+
+    const filterName = prompt(`Filtros salvos:\n${savedFilters.join('\n')}\n\nDigite o nome do filtro para carregar:`);
+    if (filterName && savedFilters.includes(filterName)) {
+        const filters = JSON.parse(localStorage.getItem(`mumble_filter_${filterName}`));
+
+        document.getElementById('filterName').value = filters.name || '';
+        document.getElementById('filterChannel').value = filters.channel || '';
+        document.getElementById('filterRole').value = filters.role || '';
+        document.getElementById('filterStatus').value = filters.status || '';
+        document.getElementById('filterOS').value = filters.os || '';
+        document.getElementById('filterOnlineTime').value = filters.time || '';
+
+        applyFilters();
+        showToast(`Filtro "${filterName}" carregado!`, 'success');
+    }
+}
+
+// Funções de exportação
+function exportUserData() {
+    const format = prompt('Escolha o formato de exportação:\n1 - CSV\n2 - JSON\n3 - PDF\n\nDigite o número:');
+
+    switch(format) {
+        case '1':
+            exportToCSV();
+            break;
+        case '2':
+            exportToJSON();
+            break;
+        case '3':
+            exportToPDF();
+            break;
+        default:
+            showToast('Formato inválido', 'warning');
+    }
+}
+
+function exportToCSV() {
+    const users = Array.from(document.querySelectorAll('.user-row:not([style*="display: none"])')).map(row => {
+        return {
+            nome: row.querySelector('.fw-semibold').textContent,
+            cargo: row.dataset.role,
+            canal: row.querySelector('.badge.bg-light')?.textContent || '',
+            tempo_online: row.dataset.onlineTime,
+            sistema: row.dataset.os
+        };
+    });
+
+    const csv = [
+        ['Nome', 'Cargo', 'Canal', 'Tempo Online (min)', 'Sistema'],
+        ...users.map(user => [user.nome, user.cargo, user.canal, Math.floor(user.tempo_online / 60), user.sistema])
+    ].map(row => row.join(',')).join('\n');
+
+    downloadFile(csv, 'usuarios_mumble.csv', 'text/csv');
+    showToast('Dados exportados em CSV', 'success');
+}
+
+function exportToJSON() {
+    const users = Array.from(document.querySelectorAll('.user-row:not([style*="display: none"])')).map(row => ({
+        nome: row.querySelector('.fw-semibold').textContent,
+        cargo: row.dataset.role,
+        canal: row.querySelector('.badge.bg-light')?.textContent || '',
+        tempo_online_minutos: Math.floor(row.dataset.onlineTime / 60),
+        sistema: row.dataset.os,
+        status: row.dataset.status
+    }));
+
+    const json = JSON.stringify({
+        exportado_em: new Date().toISOString(),
+        total_usuarios: users.length,
+        usuarios: users
+    }, null, 2);
+
+    downloadFile(json, 'usuarios_mumble.json', 'application/json');
+    showToast('Dados exportados em JSON', 'success');
+}
+
+function exportToPDF() {
+    showToast('Exportação em PDF em desenvolvimento', 'info');
+}
+
+function downloadFile(content, filename, contentType) {
+    const blob = new Blob([content], { type: contentType });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Funções utilitárias
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function refreshUsers() {
+    location.reload();
+}
+
+// Funções de controle (mantidas do código anterior)
+function toggleMute(userId, mute) {
+    fetch('/api/mute_user', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: userId, mute: mute === 'true'})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Usuário ${mute === 'true' ? 'silenciado' : 'dessilenciado'}!`);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Erro: ' + data.error, 'danger');
+        }
+    });
+}
+
+function toggleDeafen(userId, deaf) {
+    fetch('/api/deafen_user', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: userId, deaf: deaf === 'true'})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Usuário ${deaf === 'true' ? 'ensurdecido' : 'desensurdecido'}!`);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Erro: ' + data.error, 'danger');
+        }
+    });
+}
+
+function togglePriority(userId, priority) {
+    fetch('/api/set_priority_speaker', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: userId, priority: priority === 'true'})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Prioridade ${priority === 'true' ? 'ativada' : 'removida'}!`);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Erro: ' + data.error, 'danger');
+        }
+    });
+}
+
+function moveUser(userId) {
+    const channelId = prompt('Digite o ID do canal de destino:');
+    if (channelId) {
+        fetch('/api/move_user', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_id: userId, channel_id: parseInt(channelId)})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Usuário movido com sucesso!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('Erro: ' + data.error, 'danger');
+            }
+        });
+    }
+}
+
+function sendPrivateMessage(userId) {
+    const message = prompt('Digite a mensagem privada:');
+    if (message) {
+        fetch('/api/send_message', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: message, user_id: userId})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Mensagem privada enviada!');
+            } else {
+                showToast('Erro: ' + data.error, 'danger');
+            }
+        });
+    }
+}
+
+function kickUser(userId) {
+    if (confirm('Tem certeza que deseja expulsar este usuário?')) {
+        const reason = prompt('Motivo (opcional):') || '';
+
+        fetch('/api/kick_user', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_id: userId, reason: reason})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Usuário expulso com sucesso!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('Erro: ' + data.error, 'danger');
+            }
+        });
+    }
+}
+
+function banUser(userId) {
+    if (confirm('Tem certeza que deseja banir este usuário?')) {
+        const reason = prompt('Motivo do banimento:') || '';
+        const duration = prompt('Duração em horas (0 = permanente):') || '0';
+
+        fetch('/api/ban_user', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: userId,
+                reason: reason,
+                duration_hours: parseInt(duration)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Usuário banido com sucesso!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('Erro: ' + data.error, 'danger');
+            }
+        });
+    }
+}
+
+function unbanUser(userHash) {
+    if (confirm('Tem certeza que deseja desbanir este usuário?')) {
+        fetch('/api/unban_user', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_hash: userHash})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Usuário desbanido com sucesso!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('Erro: ' + data.error, 'danger');
+            }
+        });
+    }
+}
+</script>
+
+<style>
+/* Estilos aprimorados para o sistema de usuários */
+.quick-action-card {
+    background: var(--bg-tertiary);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar {
+    position: relative;
+    display: inline-block;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.875rem;
+}
+
+.avatar-circle-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.5rem;
+    margin: 0 auto;
+}
+
+.avatar-circle-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.7rem;
+}
+
+.avatar-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    border: 2px solid var(--bg-primary);
+}
+
+.role-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.role-badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.role-hierarchy {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.role-level {
+    border-left: 3px solid var(--border-color);
+    padding-left: 1rem;
+}
+
+.role-level.level-1 { border-left-color: #dc2626; }
+.role-level.level-2 { border-left-color: #d97706; }
+.role-level.level-3 { border-left-color: #0ea5e9; }
+.role-level.level-4 { border-left-color: #059669; }
+.role-level.level-5 { border-left-color: #3b82f6; }
+.role-level.level-6 { border-left-color: #6b7280; }
+
+.role-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.role-level-badge {
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.role-permissions {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+<!-- Update 3 -->
+.role-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.role-legend-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+}
+
+.role-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    display: inline-block;
+}
+
+.user-card {
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+
+.user-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.compact-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.compact-user-item {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: var(--bg-primary);
+    transition: all 0.3s ease;
+}
+
+.compact-user-item:hover {
+    background: var(--bg-secondary);
+}
+
+.compact-status {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2.25rem;
+    top: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    border: 3px solid var(--bg-primary);
+}
+
+.timeline-content h6 {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.timeline-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.timeline-item-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: var(--bg-secondary);
+    border-radius: 0.5rem;
+}
+
+.timeline-item-compact i {
+    width: 20px;
+    text-align: center;
+}
+
+.timeline-item-compact span {
+    flex-grow: 1;
+}
+
+.timeline-item-compact small {
+    white-space: nowrap;
+}
+
+.user-row:hover {
+    background-color: var(--bg-secondary);
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    z-index: 10;
+}
+
+.table th a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.table th a:hover {
+    color: var(--primary-color);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.permissions-config .table-sm td,
+.permissions-config .table-sm th {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    text-align: center;
+}
+
+.auto-config {
+    background: var(--bg-secondary);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.form-check-switch .form-check-input {
+    width: 2rem;
+    height: 1rem;
+}
+
+.modal-xl .modal-dialog {
+    max-width: 1200px;
+}
+
+@media (max-width: 768px) {
+    .role-hierarchy {
+        font-size: 0.875rem;
+    }
+
+    .role-item {
+        padding: 0.5rem;
+    }
+
+    .permissions-config {
+        font-size: 0.75rem;
+    }
+
+    .compact-user-item {
+        padding: 0.5rem;
+    }
+
+    .timeline-item-compact {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .quick-action-card {
+        margin-bottom: 1rem;
+    }
+
+    .user-avatar {
+        margin-right: 0.5rem !important;
+    }
+
+    .role-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .btn-group-sm {
+        flex-wrap: wrap;
+    }
+
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .modal-xl .modal-dialog {
+        max-width: 95%;
+        margin: 0.5rem;
+    }
+
+    .role-permissions {
+        justify-content: flex-start;
+    }
+
+    .compact-status {
+        margin-top: 0.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .stat-card .stat-number {
+        font-size: 1.5rem;
+    }
+
+    .stat-card .stat-label {
+        font-size: 0.75rem;
+    }
+
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }
+
+    .role-badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .btn-group-sm .btn {
+        padding: 0.125rem 0.25rem;
+        font-size: 0.7rem;
+    }
+
+    .quick-action-card {
+        padding: 0.75rem;
+    }
+
+    .timeline-marker {
+        width: 1rem;
+        height: 1rem;
+        left: -1.75rem;
+    }
+
+    .timeline {
+        padding-left: 1.5rem;
+    }
+
+    .user-card .card-body {
+        padding: 0.75rem;
+    }
+
+    .role-level {
+        padding-left: 0.5rem;
+    }
+
+    .permissions-config .table-sm {
+        font-size: 0.7rem;
+    }
+}
+
+/* Animações e transições aprimoradas */
+.user-row {
+    transition: all 0.3s ease;
+}
+
+.user-row:hover {
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.role-badge {
+    transition: all 0.3s ease;
+}
+
+.role-badge:hover {
+    transform: scale(1.05);
+}
+
+.quick-action-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-action-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.quick-action-card:hover::before {
+    left: 100%;
+}
+
+.avatar-circle {
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-circle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: scale(0);
+    transition: transform 0.3s ease;
+}
+
+.avatar-circle:hover::after {
+    transform: scale(1);
+}
+
+/* Estados de loading */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    border-radius: inherit;
+}
+
+[data-theme="dark"] .loading-overlay {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Melhorias de acessibilidade */
+.user-checkbox:focus,
+.form-select:focus,
+.form-control:focus {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--primary-color);
+}
+
+.btn:focus {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+/* Indicadores visuais aprimorados */
+.priority-indicator {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: #fbbf24;
+    border-radius: 50%;
+    border: 2px solid var(--bg-primary);
+    animation: pulse-priority 2s infinite;
+}
+
+@keyframes pulse-priority {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+.recording-indicator {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 12px;
+    height: 12px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid var(--bg-primary);
+    animation: pulse-recording 1s infinite;
+}
+
+@keyframes pulse-recording {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Estilos para drag and drop (futuro) */
+.draggable {
+    cursor: move;
+}
+
+.drag-over {
+    background: rgba(37, 99, 235, 0.1);
+    border: 2px dashed var(--primary-color);
+}
+
+/* Estilos para notificações toast personalizadas */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast-custom {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 0.5rem;
+    min-width: 300px;
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Estilos para modo escuro aprimorados */
+[data-theme="dark"] .quick-action-card {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .user-card {
+    background: var(--bg-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .compact-user-item {
+    background: var(--bg-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .timeline-item-compact {
+    background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .auto-config {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+/* Estilos para impressão */
+@media print {
+    .btn, .dropdown, .modal, .toast-container {
+        display: none !important;
+    }
+
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+
+    .table {
+        border-collapse: collapse;
+    }
+
+    .table th, .table td {
+        border: 1px solid #000 !important;
+        padding: 0.5rem !important;
+    }
+
+    .badge {
+        border: 1px solid #000;
+        background: transparent !important;
+        color: #000 !important;
+    }
+
+    .user-avatar {
+        display: none;
+    }
+
+    .page-break {
+        page-break-before: always;
+    }
+}
+
+/* Estilos para alta resolução */
+@media (min-resolution: 2dppx) {
+    .avatar-circle,
+    .avatar-circle-large,
+    .avatar-circle-small {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Estilos para modo de alto contraste */
+@media (prefers-contrast: high) {
+    .card {
+        border: 2px solid var(--text-primary);
+    }
+
+    .btn {
+        border: 2px solid currentColor;
+    }
+
+    .badge {
+        border: 1px solid currentColor;
+    }
+
+    .user-row:hover {
+        background: var(--text-primary);
+        color: var(--bg-primary);
+    }
+}
+
+/* Estilos para redução de movimento */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .fade-in {
+        animation: none;
+    }
+
+    .quick-action-card::before {
+        display: none;
+    }
+}
+
+.chart-container {
+    position: relative !important;
+    height: 250px !important;
+    width: 100% !important;
+    max-height: 250px !important;
+    overflow: hidden;
+}
+
+.chart-container canvas {
+    max-height: 250px !important;
+    max-width: 100% !important;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block page_title %}Canais{% endblock %}
+{% block page_subtitle %}Gerenciamento de canais de voz{% endblock %}
+
+{% block page_actions %}
+<button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createChannelModal">
+    <i class="fas fa-plus me-2"></i>
+    Criar Canal
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Estatísticas dos Canais -->
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ channels|length }}</div>
+                        <div class="stat-label">Total de Canais</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card success fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ channels.values() | selectattr('users') | list | length }}</div>
+                        <div class="stat-label">Canais Ocupados</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card warning fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ channels.values() | selectattr('temporary') | list | length }}</div>
+                        <div class="stat-label">Canais Temporários</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+        <div class="card stat-card danger fade-in">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stat-number">{{ channels.values() | selectattr('password') | list | length }}</div>
+                        <div class="stat-label">Canais Protegidos</div>
+                    </div>
+                    <div class="stat-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Canais -->
+<div class="card shadow-custom">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2 text-primary"></i>
+            Lista de Canais
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if channels %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Canal</th>
+                            <th>Usuários</th>
+                            <th>Limite</th>
+                            <th>Tipo</th>
+                            <th>Descrição</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for channel_id, channel in channels.items() %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">
+                                        {% if channel.password %}
+                                            <i class="fas fa-lock text-warning" title="Canal Protegido"></i>
+                                        {% elif channel.temporary %}
+                                            <i class="fas fa-clock text-info" title="Canal Temporário"></i>
+                                        {% else %}
+                                            <i class="fas fa-comments text-primary"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ channel.name }}</div>
+                                        {% if channel.parent != -1 %}
+                                            <small class="text-muted">
+                                                Subcanal de: {{ channels[channel.parent].name if channel.parent in channels else 'Desconhecido' }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-primary me-2">{{ channel.users|length }}</span>
+                                    {% if channel.users %}
+                                        <div class="user-avatars">
+                                            {% for user_id in channel.users[:3] %}
+                                                {% if user_id in users %}
+                                                    <span class="badge bg-light text-dark me-1" title="{{ users[user_id].name }}">
+                                                        {{ users[user_id].name[:2].upper() }}
+                                                    </span>
+                                                {% endif %}
+                                            {% endfor %}
+                                            {% if channel.users|length > 3 %}
+                                                <span class="text-muted">+{{ channel.users|length - 3 }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if channel.max_users > 0 %}
+                                    <span class="badge bg-warning">{{ channel.max_users }}</span>
+                                {% else %}
+                                    <span class="text-muted">Ilimitado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    {% if channel.temporary %}
+                                        <span class="badge bg-info">Temporário</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Permanente</span>
+                                    {% endif %}
+                                    {% if channel.password %}
+                                        <span class="badge bg-warning">Protegido</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if channel.description %}
+                                    <span title="{{ channel.description }}">
+                                        {{ channel.description[:50] }}{% if channel.description|length > 50 %}...{% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">Sem descrição</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-info" onclick="showChannelInfo({{ channel_id }})" title="Informações">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                    <button class="btn btn-outline-primary" onclick="editChannel({{ channel_id }})" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% if channel_id != 0 %}
+                                        <button class="btn btn-outline-danger" onclick="deleteChannel({{ channel_id }})" title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum canal encontrado</h5>
+                <p class="text-muted">Crie o primeiro canal para começar</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Criar Canal -->
+<div class="modal fade" id="createChannelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Criar Novo Canal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createChannelForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="channelName" class="form-label">Nome do Canal</label>
+                        <input type="text" class="form-control" id="channelName" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="channelParent" class="form-label">Canal Pai</label>
+                        <select class="form-select" id="channelParent">
+                            <option value="0">Canal Raiz</option>
+                            {% for id, channel in channels.items() %}
+                                <option value="{{ id }}">{{ channel.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="channelDescription" class="form-label">Descrição</label>
+                        <textarea class="form-control" id="channelDescription" rows="3"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="channelMaxUsers" class="form-label">Limite de Usuários</label>
+                                <input type="number" class="form-control" id="channelMaxUsers" min="0" value="0">
+                                <small class="text-muted">0 = Ilimitado</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="channelPassword" class="form-label">Senha (opcional)</label>
+                                <input type="password" class="form-control" id="channelPassword">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="channelTemporary">
+                        <label class="form-check-label" for="channelTemporary">
+                            Canal Temporário
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Criar Canal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Criar canal
+document.getElementById('createChannelForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = {
+        name: document.getElementById('channelName').value,
+        parent_id: parseInt(document.getElementById('channelParent').value),
+        description: document.getElementById('channelDescription').value,
+        max_users: parseInt(document.getElementById('channelMaxUsers').value),
+        password: document.getElementById('channelPassword').value,
+        temporary: document.getElementById('channelTemporary').checked
+    };
+
+    const submitBtn = this.querySelector('button[type="submit"]');
+    showLoading(submitBtn);
+
+    fetch('/api/create_channel', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Canal criado com sucesso!');
+            bootstrap.Modal.getInstance(document.getElementById('createChannelModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast('Erro: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        showToast('Erro ao criar canal', 'danger');
+    })
+    .finally(() => {
+        hideLoading(submitBtn);
+    });
+});
+
+function showChannelInfo(channelId) {
+    // Implementar modal de informações do canal
+    showToast('Funcionalidade em desenvolvimento', 'info');
+}
+
+function editChannel(channelId) {
+    // Implementar edição de canal
+    showToast('Funcionalidade em desenvolvimento', 'info');
+}
+
+function deleteChannel(channelId) {
+    if (confirm('Tem certeza que deseja excluir este canal?')) {
+        fetch('/api/remove_channel', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({channel_id: channelId})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Canal excluído com sucesso!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast('Erro: ' + data.error, 'danger');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
