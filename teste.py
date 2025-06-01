@@ -497,6 +497,16 @@ def create_church_channels_with_context(server, ctx):
     try:
         # Estrutura de canais para a igreja
         channels_structure = {
+            "Geral": {
+                "description": "Canais de uso geral e organização central",
+                "subchannels": {
+                    "Recepção": "Canal de recepção para visitantes e participantes",
+                    "Avisos da Administração": "Canal para comunicados oficiais",
+                    "Canal de Espera": "Canal de espera antes de direcionamento",
+                    "Canal Técnico": "Canal de suporte técnico geral",
+                    "Coordenação Geral": "Canal de coordenação central durante eventos"
+                }
+            },
             "Liderança": {
                 "description": "Canal para liderança da igreja",
                 "subchannels": {
@@ -511,8 +521,42 @@ def create_church_channels_with_context(server, ctx):
                     "Louvor": "Canal do ministério de louvor",
                     "Jovens": "Canal do ministério jovem",
                     "Crianças": "Canal do ministério infantil",
-                    "Som e Mídia": "Canal da equipe técnica",
+                    "Som e Mídia": "Canal da equipe técnica de áudio e vídeo",
                     "Intercessão": "Canal do ministério de intercessão"
+                }
+            },
+            "Louvor": {
+                "description": "Comunicação interna do ministério de louvor",
+                "subchannels": {
+                    "Palco": "Canal geral para comunicação no palco",
+                    "Voz Principal": "Canal exclusivo para vocal principal",
+                    "Back Vocal": "Canal para vocal de apoio",
+                    "Instrumentos": "Canal para músicos e instrumentistas",
+                    "Sala de Ensaio": "Canal reservado para ensaios"
+                }
+            },
+            "Mídia e Projeção": {
+                "description": "Canais da equipe de mídia e transmissão",
+                "subchannels": {
+                    "Projeção (Telão)": "Canal para o operador de projeção",
+                    "Transmissão Online": "Canal da equipe responsável pela live",
+                    "Técnico de Vídeo": "Canal do responsável técnico de vídeo"
+                }
+            },
+            "Som": {
+                "description": "Canais técnicos de áudio",
+                "subchannels": {
+                    "Mesa de Som": "Comunicação com a mesa de som principal",
+                    "Operador de Som": "Canal do operador de áudio",
+                    "Retornos e Monitoração": "Canal para controle de retorno e monitoração"
+                }
+            },
+            "Segurança e Ordem": {
+                "description": "Canais da equipe de segurança e organização",
+                "subchannels": {
+                    "Coordenação": "Canal de coordenação de segurança",
+                    "Portaria e Estacionamento": "Comunicação com a equipe externa",
+                    "Patrulha Interna": "Canal para rondas internas"
                 }
             },
             "Departamentos": {
@@ -531,11 +575,12 @@ def create_church_channels_with_context(server, ctx):
                     "Conferências": "Canal para conferências"
                 }
             },
-            "Geral": {
-                "description": "Canais de uso geral",
+            "Reuniões Privadas": {
+                "description": "Canais reservados para reuniões específicas",
                 "subchannels": {
-                    "Sala de Espera": "Canal para aguardar atendimento",
-                    "Coordenação Geral": "Canal de coordenação durante eventos"
+                    "Reunião 1 (Privada)": "Canal para reuniões restritas",
+                    "Reunião 2 (Privada)": "Canal secundário para reuniões privadas",
+                    "Sala de Conflitos": "Canal reservado para tratativas delicadas"
                 }
             }
         }
