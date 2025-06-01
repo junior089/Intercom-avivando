@@ -1,0 +1,139 @@
+2025-06-01 15:00:37,592 - INFO - Conectado ao servidor Mumble ID 1
+2025-06-01 15:00:37,592 - INFO - Monitoramento iniciado
+2025-06-01 15:00:37,595 - ERROR - Erro ao salvar estatísticas: no such table: server_stats
+2025-06-01 15:00:37,871 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.3.93:5000
+2025-06-01 15:00:37,871 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-01 15:00:37,875 - INFO -  * Restarting with stat
+2025-06-01 15:00:38,522 - INFO - Conectado ao servidor Mumble ID 1
+2025-06-01 15:00:38,522 - INFO - Monitoramento iniciado
+2025-06-01 15:00:38,582 - WARNING -  * Debugger is active!
+2025-06-01 15:00:38,593 - INFO -  * Debugger PIN: 115-356-366
+2025-06-01 15:00:41,709 - INFO - 127.0.0.1 - - [01/Jun/2025 15:00:41] "[32mGET / HTTP/1.1[0m" 302 -
+2025-06-01 15:00:41,817 - INFO - 127.0.0.1 - - [01/Jun/2025 15:00:41] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:00:42,099 - INFO - 127.0.0.1 - - [01/Jun/2025 15:00:42] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-06-01 15:01:12,145 - INFO - 127.0.0.1 - - [01/Jun/2025 15:01:12] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:01:12,149 - INFO - 127.0.0.1 - - [01/Jun/2025 15:01:12] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:01:42,149 - INFO - 127.0.0.1 - - [01/Jun/2025 15:01:42] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:01:42,154 - INFO - 127.0.0.1 - - [01/Jun/2025 15:01:42] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:02:12,145 - INFO - 127.0.0.1 - - [01/Jun/2025 15:02:12] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:02:12,150 - INFO - 127.0.0.1 - - [01/Jun/2025 15:02:12] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:02:42,150 - INFO - 127.0.0.1 - - [01/Jun/2025 15:02:42] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:02:42,156 - INFO - 127.0.0.1 - - [01/Jun/2025 15:02:42] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:03:12,153 - INFO - 127.0.0.1 - - [01/Jun/2025 15:03:12] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:03:12,157 - INFO - 127.0.0.1 - - [01/Jun/2025 15:03:12] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:03:42,153 - INFO - 127.0.0.1 - - [01/Jun/2025 15:03:42] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:03:42,159 - INFO - 127.0.0.1 - - [01/Jun/2025 15:03:42] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:04:12,145 - INFO - 127.0.0.1 - - [01/Jun/2025 15:04:12] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:04:12,150 - INFO - 127.0.0.1 - - [01/Jun/2025 15:04:12] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:05:07,144 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:07] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:05:07,149 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:07] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:05:10,154 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:10] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:05:10,184 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:10] "[33mGET /static/logo-church.png HTTP/1.1[0m" 404 -
+2025-06-01 15:05:30,606 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:30] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:05:30,883 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:30] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:05:45,855 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:45] "[32mPOST /api/toggle_dark_mode HTTP/1.1[0m" 302 -
+2025-06-01 15:05:45,863 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:45] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:05:48,180 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:48] "[32mPOST /api/toggle_dark_mode HTTP/1.1[0m" 302 -
+2025-06-01 15:05:48,189 - INFO - 127.0.0.1 - - [01/Jun/2025 15:05:48] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:06:01,169 - INFO - 127.0.0.1 - - [01/Jun/2025 15:06:01] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:06:01,175 - INFO - 127.0.0.1 - - [01/Jun/2025 15:06:01] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:06:31,150 - INFO - 127.0.0.1 - - [01/Jun/2025 15:06:31] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:06:31,155 - INFO - 127.0.0.1 - - [01/Jun/2025 15:06:31] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:07:01,145 - INFO - 127.0.0.1 - - [01/Jun/2025 15:07:01] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:07:01,150 - INFO - 127.0.0.1 - - [01/Jun/2025 15:07:01] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:07:31,148 - INFO - 127.0.0.1 - - [01/Jun/2025 15:07:31] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:07:31,152 - INFO - 127.0.0.1 - - [01/Jun/2025 15:07:31] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:08:01,152 - INFO - 127.0.0.1 - - [01/Jun/2025 15:08:01] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:08:01,158 - INFO - 127.0.0.1 - - [01/Jun/2025 15:08:01] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:08:31,141 - INFO - 127.0.0.1 - - [01/Jun/2025 15:08:31] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:08:31,146 - INFO - 127.0.0.1 - - [01/Jun/2025 15:08:31] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:09:01,148 - INFO - 127.0.0.1 - - [01/Jun/2025 15:09:01] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:09:01,153 - INFO - 127.0.0.1 - - [01/Jun/2025 15:09:01] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:09:56,079 - INFO - 127.0.0.1 - - [01/Jun/2025 15:09:56] "[32mGET /api/refresh_data HTTP/1.1[0m" 302 -
+2025-06-01 15:09:56,119 - INFO - 127.0.0.1 - - [01/Jun/2025 15:09:56] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:09:57,648 - INFO - 127.0.0.1 - - [01/Jun/2025 15:09:57] "GET /login HTTP/1.1" 200 -
+2025-06-01 15:09:57,681 - INFO - 127.0.0.1 - - [01/Jun/2025 15:09:57] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:10:24,765 - INFO - 127.0.0.1 - - [01/Jun/2025 15:10:24] "POST /login HTTP/1.1" 200 -
+2025-06-01 15:10:24,785 - INFO - 127.0.0.1 - - [01/Jun/2025 15:10:24] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:10:34,695 - INFO - 127.0.0.1 - - [01/Jun/2025 15:10:34] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-06-01 15:10:34,748 - INFO - 127.0.0.1 - - [01/Jun/2025 15:10:34] "GET /dashboard HTTP/1.1" 200 -
+2025-06-01 15:10:34,773 - INFO - 127.0.0.1 - - [01/Jun/2025 15:10:34] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:10:41,172 - INFO - 127.0.0.1 - - [01/Jun/2025 15:10:41] "POST /api/toggle_dark_mode HTTP/1.1" 200 -
+2025-06-01 15:10:44,421 - INFO - 127.0.0.1 - - [01/Jun/2025 15:10:44] "POST /api/toggle_dark_mode HTTP/1.1" 200 -
+2025-06-01 15:11:05,154 - INFO - 127.0.0.1 - - [01/Jun/2025 15:11:05] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:11:35,151 - INFO - 127.0.0.1 - - [01/Jun/2025 15:11:35] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:12:05,149 - INFO - 127.0.0.1 - - [01/Jun/2025 15:12:05] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:12:35,151 - INFO - 127.0.0.1 - - [01/Jun/2025 15:12:35] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:13:05,146 - INFO - 127.0.0.1 - - [01/Jun/2025 15:13:05] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:13:35,149 - INFO - 127.0.0.1 - - [01/Jun/2025 15:13:35] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:14:05,178 - INFO - 127.0.0.1 - - [01/Jun/2025 15:14:05] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:14:11,809 - INFO - 127.0.0.1 - - [01/Jun/2025 15:14:11] "GET /dashboard HTTP/1.1" 200 -
+2025-06-01 15:14:11,832 - INFO - 127.0.0.1 - - [01/Jun/2025 15:14:11] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:14:41,914 - INFO - 127.0.0.1 - - [01/Jun/2025 15:14:41] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:14:45,326 - INFO - 127.0.0.1 - - [01/Jun/2025 15:14:45] "GET /dashboard HTTP/1.1" 200 -
+2025-06-01 15:14:45,352 - INFO - 127.0.0.1 - - [01/Jun/2025 15:14:45] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:14:54,458 - INFO - 127.0.0.1 - - [01/Jun/2025 15:14:54] "GET /dashboard HTTP/1.1" 200 -
+2025-06-01 15:14:54,482 - INFO - 127.0.0.1 - - [01/Jun/2025 15:14:54] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:15:25,154 - INFO - 127.0.0.1 - - [01/Jun/2025 15:15:25] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:15:55,149 - INFO - 127.0.0.1 - - [01/Jun/2025 15:15:55] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:16:25,144 - INFO - 127.0.0.1 - - [01/Jun/2025 15:16:25] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:16:55,158 - INFO - 127.0.0.1 - - [01/Jun/2025 15:16:55] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:17:25,144 - INFO - 127.0.0.1 - - [01/Jun/2025 15:17:25] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:17:43,985 - INFO -  * Detected change in 'C:\\DEV\\Intercom avivando\\app.py', reloading
+2025-06-01 15:17:44,016 - INFO -  * Restarting with stat
+2025-06-01 15:19:17,858 - INFO - Conectado ao servidor Mumble ID 1
+2025-06-01 15:19:17,858 - INFO - Monitoramento iniciado
+2025-06-01 15:19:17,921 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.3.93:5000
+2025-06-01 15:19:17,921 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-01 15:19:17,923 - INFO -  * Restarting with stat
+2025-06-01 15:19:18,257 - INFO - Conectado ao servidor Mumble ID 1
+2025-06-01 15:19:18,257 - INFO - Monitoramento iniciado
+2025-06-01 15:19:18,280 - WARNING -  * Debugger is active!
+2025-06-01 15:19:18,285 - INFO -  * Debugger PIN: 115-356-366
+2025-06-01 15:19:30,164 - INFO - 127.0.0.1 - - [01/Jun/2025 15:19:30] "GET /dashboard HTTP/1.1" 200 -
+2025-06-01 15:19:30,433 - INFO - 127.0.0.1 - - [01/Jun/2025 15:19:30] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:20:01,150 - INFO - 127.0.0.1 - - [01/Jun/2025 15:20:01] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:20:31,149 - INFO - 127.0.0.1 - - [01/Jun/2025 15:20:31] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:21:01,147 - INFO - 127.0.0.1 - - [01/Jun/2025 15:21:01] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:21:31,150 - INFO - 127.0.0.1 - - [01/Jun/2025 15:21:31] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:22:01,149 - INFO - 127.0.0.1 - - [01/Jun/2025 15:22:01] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:22:31,146 - INFO - 127.0.0.1 - - [01/Jun/2025 15:22:31] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:23:01,153 - INFO - 127.0.0.1 - - [01/Jun/2025 15:23:01] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:24:02,156 - INFO - 127.0.0.1 - - [01/Jun/2025 15:24:02] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:25:03,158 - INFO - 127.0.0.1 - - [01/Jun/2025 15:25:03] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:26:04,150 - INFO - 127.0.0.1 - - [01/Jun/2025 15:26:04] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:27:05,155 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:05] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:27:49,229 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:49] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:27:50,422 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:50] "[35m[1mGET /dashboard HTTP/1.1[0m" 500 -
+2025-06-01 15:27:50,449 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:50] "GET /dashboard?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2025-06-01 15:27:50,452 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:50] "GET /dashboard?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2025-06-01 15:27:50,520 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:50] "GET /dashboard?__debugger__=yes&cmd=resource&f=console.png&s=9TVbfsBWKxFY6OGu6L7v HTTP/1.1" 200 -
+2025-06-01 15:27:50,533 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:50] "GET /dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2025-06-01 15:27:51,293 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[35m[1mGET /dashboard HTTP/1.1[0m" 500 -
+2025-06-01 15:27:51,337 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-06-01 15:27:51,339 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-06-01 15:27:51,371 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=console.png&s=9TVbfsBWKxFY6OGu6L7v HTTP/1.1[0m" 304 -
+2025-06-01 15:27:51,388 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2025-06-01 15:27:51,522 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[35m[1mGET /dashboard HTTP/1.1[0m" 500 -
+2025-06-01 15:27:51,570 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-06-01 15:27:51,574 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-06-01 15:27:51,588 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=console.png&s=9TVbfsBWKxFY6OGu6L7v HTTP/1.1[0m" 304 -
+2025-06-01 15:27:51,602 - INFO - 127.0.0.1 - - [01/Jun/2025 15:27:51] "[36mGET /dashboard?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2025-06-01 15:28:02,988 - INFO - 127.0.0.1 - - [01/Jun/2025 15:28:02] "POST /login HTTP/1.1" 200 -
+2025-06-01 15:28:03,014 - INFO - 127.0.0.1 - - [01/Jun/2025 15:28:03] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:28:22,507 - INFO - 127.0.0.1 - - [01/Jun/2025 15:28:22] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-06-01 15:28:22,515 - INFO - 127.0.0.1 - - [01/Jun/2025 15:28:22] "GET /dashboard HTTP/1.1" 200 -
+2025-06-01 15:28:22,542 - INFO - 127.0.0.1 - - [01/Jun/2025 15:28:22] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:28:28,716 - INFO - 127.0.0.1 - - [01/Jun/2025 15:28:28] "GET /channels HTTP/1.1" 200 -
+2025-06-01 15:28:28,742 - INFO - 127.0.0.1 - - [01/Jun/2025 15:28:28] "[36mGET /static/logo.png HTTP/1.1[0m" 304 -
+2025-06-01 15:28:58,778 - INFO - 127.0.0.1 - - [01/Jun/2025 15:28:58] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:29:28,768 - INFO - 127.0.0.1 - - [01/Jun/2025 15:29:28] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:29:58,770 - INFO - 127.0.0.1 - - [01/Jun/2025 15:29:58] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:30:28,771 - INFO - 127.0.0.1 - - [01/Jun/2025 15:30:28] "GET /api/refresh_data HTTP/1.1" 200 -
+2025-06-01 15:30:58,775 - INFO - 127.0.0.1 - - [01/Jun/2025 15:30:58] "GET /api/refresh_data HTTP/1.1" 200 -

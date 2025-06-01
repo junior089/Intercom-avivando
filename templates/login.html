@@ -3,135 +3,927 @@
 {% block title %}Login - Painel Mumble Avançado{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-center align-items-center" style="min-height: 100vh; background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 50%, var(--accent-color) 100%);">
-    <div class="card shadow-xl animate__animated animate__zoomIn" style="width: 100%; max-width: 450px; border: none; backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.95);">
-        <div class="card-body p-5">
-            <div class="text-center mb-4">
-                <div class="mb-4">
-                    <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: var(--shadow-lg);">
-                        <i class="fas fa-church text-white" style="font-size: 2rem;"></i>
+<div class="login-container">
+    <!-- Background -->
+    <div class="login-background">
+        <div class="bg-gradient"></div>
+        <div class="bg-pattern"></div>
+        <canvas id="networkCanvas"></canvas>
+    </div>
+
+    <!-- Main Login Layout -->
+    <div class="login-layout">
+        <!-- Left Panel - Branding -->
+        <div class="branding-panel">
+            <div class="branding-content">
+                <!-- Logo Section -->
+                <div class="logo-section">
+                    <div class="logo-container">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="Igreja Logo" class="church-logo">
+                        <div class="logo-fallback">
+                            <div class="logo-icon">
+                                <i class="fas fa-church"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="brand-info">
+                        <h1 class="church-name">Igreja Avivando as Nações</h1>
+                        <div class="divider"></div>
+                        <h2 class="system-name">Painel Mumble Avançado</h2>
+                        <p class="system-description">Sistema de Controle e Administração do Intercomunicador</p>
                     </div>
                 </div>
-                <h2 class="fw-bold gradient-text mb-2">Painel Mumble Avançado</h2>
-                <p class="text-muted">Sistema de Controle do Intercomunicador</p>
-                <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-                    <span class="badge bg-primary">v2.0.0</span>
-                    <span class="badge bg-success">
-                        <i class="fas fa-shield-alt me-1"></i>
-                        Seguro
-                    </span>
+
+                <!-- Features -->
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h4>Segurança Avançada</h4>
+                            <p>Autenticação segura e criptografia SSL</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h4>Gestão Completa</h4>
+                            <p>Controle total de usuários e canais</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="feature-text">
+                            <h4>Monitoramento</h4>
+                            <p>Estatísticas em tempo real</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div class="system-status">
+                    <div class="status-header">
+                        <i class="fas fa-server"></i>
+                        <span>Status do Sistema</span>
+                    </div>
+                    <div class="status-items">
+                        <div class="status-item online">
+                            <div class="status-dot"></div>
+                            <span>Servidor Online</span>
+                        </div>
+                        <div class="status-item secure">
+                            <div class="status-dot"></div>
+                            <span>Conexão Segura</span>
+                        </div>
+                        <div class="status-item updated">
+                            <div class="status-dot"></div>
+                            <span>Sistema Atualizado</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <form method="POST" id="loginForm">
-                <div class="mb-4">
-                    <label for="username" class="form-label fw-semibold">
-                        <i class="fas fa-user me-2 text-primary"></i>
-                        Usuário
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text" style="background: var(--bg-tertiary); border-color: var(--border-color); color: var(--text-primary);">
+        <!-- Right Panel - Login Form -->
+        <div class="login-panel">
+            <div class="login-content">
+                <div class="login-header">
+                    <h3>Acesso Administrativo</h3>
+                    <p>Entre com suas credenciais para acessar o painel</p>
+
+                    <div class="version-badge">
+                        <i class="fas fa-code-branch"></i>
+                        <span>Versão 2.0.0</span>
+                    </div>
+                </div>
+
+                <form method="POST" id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="username" class="form-label">
                             <i class="fas fa-user"></i>
-                        </span>
-                        <input type="text" class="form-control" id="username" name="username" required
-                               placeholder="Digite seu usuário" autocomplete="username">
+                            <span>Nome de Usuário</span>
+                        </label>
+                        <div class="input-container">
+                            <input type="text" class="form-input" id="username" name="username" required
+                                   placeholder="Digite seu usuário" autocomplete="username">
+                            <div class="input-highlight"></div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mb-4">
-                    <label for="password" class="form-label fw-semibold">
-                        <i class="fas fa-lock me-2 text-primary"></i>
-                        Senha
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text" style="background: var(--bg-tertiary); border-color: var(--border-color); color: var(--text-primary);">
+                    <div class="form-group">
+                        <label for="password" class="form-label">
                             <i class="fas fa-lock"></i>
-                        </span>
-                        <input type="password" class="form-control" id="password" name="password" required
-                               placeholder="Digite sua senha" autocomplete="current-password">
-                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
-                            <i class="fas fa-eye" id="passwordToggleIcon"></i>
-                        </button>
+                            <span>Senha</span>
+                        </label>
+                        <div class="input-container">
+                            <input type="password" class="form-input" id="password" name="password" required
+                                   placeholder="Digite sua senha" autocomplete="current-password">
+                            <button type="button" class="password-toggle" onclick="togglePassword()">
+                                <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                            </button>
+                            <div class="input-highlight"></div>
+                        </div>
+                        <div id="capsLockWarning" class="caps-warning" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Caps Lock está ativado</span>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mb-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
-                        <label class="form-check-label" for="rememberMe">
-                            Lembrar-me neste dispositivo
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="rememberMe" name="rememberMe">
+                            <span class="checkmark">
+                                <i class="fas fa-check"></i>
+                            </span>
+                            <span class="checkbox-text">Manter-me conectado neste dispositivo</span>
                         </label>
                     </div>
-                </div>
 
-                <div class="d-grid mb-4">
-                    <button type="submit" class="btn btn-primary btn-lg" id="loginBtn">
-                        <i class="fas fa-sign-in-alt me-2"></i>
-                        Entrar no Sistema
+                    <button type="submit" class="login-button" id="loginBtn">
+                        <span class="button-content">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>Entrar no Sistema</span>
+                        </span>
+                        <div class="button-loader">
+                            <div class="loader-spinner"></div>
+                        </div>
+                        <div class="button-success">
+                            <i class="fas fa-check"></i>
+                        </div>
                     </button>
-                </div>
-            </form>
+                </form>
 
-            <div class="text-center">
-                <div class="row g-2 mb-3">
-                    <div class="col">
-                        <div class="d-flex align-items-center justify-content-center gap-2 text-muted">
-                            <i class="fas fa-server text-success"></i>
-                            <small>Servidor Online</small>
-                        </div>
+                <div class="login-footer">
+                    <div class="security-notice">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Acesso restrito a administradores autorizados</span>
                     </div>
-                    <div class="col">
-                        <div class="d-flex align-items-center justify-content-center gap-2 text-muted">
-                            <i class="fas fa-shield-alt text-primary"></i>
-                            <small>Conexão Segura</small>
-                        </div>
+
+                    <div class="copyright">
+                        <span>&copy; 2024 Igreja Avivando as Nações. Todos os direitos reservados.</span>
                     </div>
-                </div>
-
-                <hr class="my-3">
-
-                <small class="text-muted d-block">
-                    <i class="fas fa-info-circle me-1"></i>
-                    Acesso restrito a administradores autorizados
-                </small>
-
-                <div class="mt-3">
-                    <small class="text-muted">
-                        Igreja Avivando as Nações &copy; 2024
-                    </small>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Partículas de fundo -->
-<div id="particles-js" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;"></div>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.login-container {
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.login-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.bg-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg,
+        #667eea 0%,
+        #764ba2 25%,
+        #f093fb 50%,
+        #f5576c 75%,
+        #4facfe 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.bg-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 0%, transparent 50%);
+    background-size: 100px 100px;
+    animation: patternMove 20s linear infinite;
+}
+
+@keyframes patternMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(100px, 100px); }
+}
+
+#networkCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.3;
+}
+
+.login-layout {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    min-height: 100vh;
+}
+
+.branding-panel {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+}
+
+.branding-content {
+    max-width: 500px;
+    width: 100%;
+    color: white;
+    text-align: center;
+}
+
+.logo-section {
+    margin-bottom: 3rem;
+}
+
+.logo-container {
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.church-logo {
+    max-width: 150px;
+    height: auto;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.church-logo:hover {
+    transform: scale(1.05) rotate(2deg);
+}
+
+.logo-fallback {
+    display: none;
+}
+
+.logo-icon {
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.logo-icon i {
+    font-size: 4rem;
+    color: white;
+}
+
+.church-name {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #fff, #f0f0f0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+}
+
+.divider {
+    width: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, white, transparent);
+    margin: 1.5rem auto;
+}
+
+.system-name {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.system-description {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.feature-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.feature-text h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: white;
+}
+
+.feature-text p {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.4;
+}
+
+.system-status {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: white;
+}
+
+.status-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.status-item.online .status-dot {
+    background: #10b981;
+}
+
+.status-item.secure .status-dot {
+    background: #3b82f6;
+}
+
+.status-item.updated .status-dot {
+    background: #f59e0b;
+}
+
+.login-panel {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+}
+
+.login-content {
+    max-width: 450px;
+    width: 100%;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.login-header h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.login-header p {
+    color: #6b7280;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+.version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.login-form {
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+.form-label i {
+    color: #667eea;
+    width: 16px;
+}
+
+.input-container {
+    position: relative;
+}
+
+.form-input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 1rem;
+    background: white;
+    transition: all 0.3s ease;
+    outline: none;
+    color: #1f2937;
+}
+
+.form-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-input:focus + .password-toggle {
+    color: #667eea;
+}
+
+.form-input:focus ~ .input-highlight {
+    transform: scaleX(1);
+}
+
+.input-highlight {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+    border-radius: 0 0 12px 12px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.password-toggle:hover {
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.caps-warning {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #dc2626;
+    font-size: 0.9rem;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-options {
+    margin-bottom: 2rem;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-container input[type="checkbox"] {
+    display: none;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    margin-right: 0.75rem;
+    position: relative;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkmark i {
+    color: white;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkmark {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: #667eea;
+}
+
+.checkbox-container input[type="checkbox"]:checked + .checkmark i {
+    opacity: 1;
+}
+
+.checkbox-text {
+    color: #374151;
+    font-size: 0.95rem;
+}
+
+.login-button {
+    width: 100%;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.login-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.button-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transition: opacity 0.3s ease;
+}
+
+.button-loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.button-success {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-size: 1.5rem;
+}
+
+.login-button.loading .button-content {
+    opacity: 0;
+}
+
+.login-button.loading .button-loader {
+    opacity: 1;
+}
+
+.login-button.success .button-content,
+.login-button.success .button-loader {
+    opacity: 0;
+}
+
+.login-button.success .button-success {
+    opacity: 1;
+}
+
+.loader-spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.login-footer {
+    text-align: center;
+}
+
+.security-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f3f4f6;
+    border-radius: 8px;
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.copyright {
+    color: #9ca3af;
+    font-size: 0.85rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .login-layout {
+        flex-direction: column;
+    }
+
+    .branding-panel {
+        flex: none;
+        min-height: 40vh;
+    }
+
+    .login-panel {
+        flex: none;
+        min-height: 60vh;
+    }
+
+    .church-name {
+        font-size: 2rem;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .branding-panel,
+    .login-panel {
+        padding: 2rem 1.5rem;
+    }
+
+    .church-name {
+        font-size: 1.8rem;
+    }
+
+    .system-name {
+        font-size: 1.4rem;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .feature-item {
+        padding: 1rem;
+    }
+}
+
+/* Animation delays for staggered entrance */
+.logo-container {
+    animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.brand-info {
+    animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+.features-grid {
+    animation: fadeInUp 0.8s ease-out 0.6s both;
+}
+
+.system-status {
+    animation: fadeInUp 0.8s ease-out 0.8s both;
+}
+
+.login-header {
+    animation: fadeInUp 0.8s ease-out 0.3s both;
+}
+
+.login-form {
+    animation: fadeInUp 0.8s ease-out 0.5s both;
+}
+
+.login-footer {
+    animation: fadeInUp 0.8s ease-out 0.7s both;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 <script>
-// Configurar partículas de fundo
-particlesJS('particles-js', {
-    particles: {
-        number: { value: 50, density: { enable: true, value_area: 800 } },
-        color: { value: '#ffffff' },
-        shape: { type: 'circle' },
-        opacity: { value: 0.1, random: true },
-        size: { value: 3, random: true },
-        line_linked: { enable: true, distance: 150, color: '#ffffff', opacity: 0.1, width: 1 },
-        move: { enable: true, speed: 1, direction: 'none', random: false, straight: false, out_mode: 'out', bounce: false }
-    },
-    interactivity: {
-        detect_on: 'canvas',
-        events: { onhover: { enable: true, mode: 'repulse' }, onclick: { enable: true, mode: 'push' }, resize: true },
-        modes: { repulse: { distance: 100, duration: 0.4 }, push: { particles_nb: 4 } }
-    },
-    retina_detect: true
-});
+// Network animation canvas
+function initNetworkAnimation() {
+    const canvas = document.getElementById('networkCanvas');
+    const ctx = canvas.getContext('2d');
 
-// Toggle de senha
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const nodes = [];
+    const nodeCount = 50;
+
+    // Create nodes
+    for (let i = 0; i < nodeCount; i++) {
+        nodes.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            radius: Math.random() * 2 + 1
+        });
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update and draw nodes
+        nodes.forEach(node => {
+            node.x += node.vx;
+            node.y += node.vy;
+
+            // Bounce off edges
+            if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
+            if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
+
+            // Draw node
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.fill();
+        });
+
+        // Draw connections
+        nodes.forEach((node, i) => {
+            nodes.slice(i + 1).forEach(otherNode => {
+                const distance = Math.sqrt(
+                    Math.pow(node.x - otherNode.x, 2) +
+                    Math.pow(node.y - otherNode.y, 2)
+                );
+
+                if (distance < 100) {
+                    ctx.beginPath();
+                    ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(otherNode.x, otherNode.y);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${0.3 * (1 - distance / 100)})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            });
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+}
+
+// Toggle password visibility
 function togglePassword() {
     const passwordInput = document.getElementById('password');
     const toggleIcon = document.getElementById('passwordToggleIcon');
@@ -145,7 +937,7 @@ function togglePassword() {
     }
 }
 
-// Validação do formulário
+// Form submission with enhanced feedback
 document.getElementById('loginForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -154,42 +946,78 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     const loginBtn = document.getElementById('loginBtn');
 
     if (!username || !password) {
-        notificationSystem.error('Erro', 'Por favor, preencha todos os campos');
+        showNotification('Por favor, preencha todos os campos', 'error');
         return;
     }
 
-    showLoading(loginBtn);
+    // Loading state
+    loginBtn.classList.add('loading');
 
-    // Simular delay de autenticação
+    // Simulate authentication delay
     setTimeout(() => {
-        this.submit();
-    }, 500);
+        loginBtn.classList.remove('loading');
+        loginBtn.classList.add('success');
+
+        setTimeout(() => {
+            this.submit();
+        }, 1000);
+    }, 2000);
 });
 
-// Auto-focus no campo de usuário
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('username').focus();
+// Caps Lock detection
+document.getElementById('password').addEventListener('keyup', function(e) {
+    const capsLockOn = e.getModifierState && e.getModifierState('CapsLock');
+    const warning = document.getElementById('capsLockWarning');
 
-    // Adicionar efeito de digitação no título
-    const title = document.querySelector('.gradient-text');
-    if (title) {
-        const text = title.textContent;
-        title.textContent = '';
-        let i = 0;
-
-        function typeWriter() {
-            if (i < text.length) {
-                title.textContent += text.charAt(i);
-                i++;
-                setTimeout(typeWriter, 100);
-            }
-        }
-
-        setTimeout(typeWriter, 500);
+    if (capsLockOn) {
+        warning.style.display = 'flex';
+    } else {
+        warning.style.display = 'none';
     }
 });
 
-// Detectar tentativas de força bruta
+// Auto-focus username field
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('username').focus();
+    initNetworkAnimation();
+
+    // Logo fallback
+    const logo = document.querySelector('.church-logo');
+    const fallback = document.querySelector('.logo-fallback');
+
+    logo.addEventListener('error', function() {
+        logo.style.display = 'none';
+        fallback.style.display = 'block';
+    });
+});
+
+// Notification system
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" class="notification-close">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+// Brute force protection
 let loginAttempts = 0;
 const maxAttempts = 5;
 
@@ -197,34 +1025,57 @@ document.getElementById('loginForm').addEventListener('submit', function() {
     loginAttempts++;
 
     if (loginAttempts >= maxAttempts) {
-        notificationSystem.warning('Segurança', 'Muitas tentativas de login. Aguarde alguns minutos.');
+        showNotification('Muitas tentativas de login. Aguarde alguns minutos.', 'error');
         document.getElementById('loginBtn').disabled = true;
 
         setTimeout(() => {
             document.getElementById('loginBtn').disabled = false;
             loginAttempts = 0;
-        }, 300000); // 5 minutos
-    }
-});
-
-// Verificar caps lock
-document.getElementById('password').addEventListener('keyup', function(e) {
-    const capsLockOn = e.getModifierState && e.getModifierState('CapsLock');
-    const warning = document.getElementById('capsLockWarning');
-
-    if (capsLockOn) {
-        if (!warning) {
-            const warningDiv = document.createElement('div');
-            warningDiv.id = 'capsLockWarning';
-            warningDiv.className = 'alert alert-warning mt-2 animate__animated animate__fadeIn';
-            warningDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Caps Lock está ativado';
-            this.parentNode.parentNode.appendChild(warningDiv);
-        }
-    } else {
-        if (warning) {
-            warning.remove();
-        }
+        }, 300000); // 5 minutes
     }
 });
 </script>
+
+<style>
+.notification {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 9999;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    max-width: 400px;
+    border-left: 4px solid #3b82f6;
+}
+
+.notification.notification-error {
+    border-left-color: #ef4444;
+    color: #dc2626;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: color 0.3s ease;
+}
+
+.notification-close:hover {
+    color: #6b7280;
+}
+</style>
 {% endblock %}
